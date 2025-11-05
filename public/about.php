@@ -1,4 +1,6 @@
-<?php include '../includes/header.php'; ?>
+<?php 
+include __DIR__ . '/../../includes/config.php';
+?>
 <!DOCTYPE html>
 <html>
 <head>

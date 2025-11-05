@@ -1,5 +1,5 @@
 <?php
-include '../../includes/config.php';
+include __DIR__ . '/../../includes/config.php';
 
 // ✅ Admin-only access
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {

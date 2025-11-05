@@ -1,5 +1,5 @@
 <?php
-include '../../includes/config.php';
+include __DIR__ . '/../../includes/config.php';
 session_start();
 
 if (!isset($_SESSION['admin_id'])) {

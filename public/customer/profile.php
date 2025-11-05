@@ -1,6 +1,6 @@
 <?php
 session_start();
-include '../../includes/config.php';
+include __DIR__ . '/../../includes/config.php';
 
 if (!isset($_SESSION['customer_id'])) {
     header("Location: ../login.php");

@@ -1,6 +1,7 @@
 <?php
 session_start();
-include '../includes/config.php';
+require_once __DIR__ . '/../includes/config.php';
+
 
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     header("Location: index.php");

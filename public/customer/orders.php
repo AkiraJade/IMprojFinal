@@ -1,6 +1,6 @@
 <?php
 session_start();
-include '../../includes/config.php';
+include __DIR__ . '/../../includes/config.php';
 
 if (!isset($_SESSION['customer_id'])) {
     header("Location: ../login.php");
@@ -50,11 +50,12 @@ button:hover { background:#7e32bb; }
     <td><?= htmlspecialchars($row['transaction_date']) ?></td>
     <td><span class="status <?= htmlspecialchars($row['status']) ?>"><?= htmlspecialchars($row['status']) ?></span></td>
     <td>₱<?= number_format($row['total'],2) ?></td>
-    <td>
-        <a href="../admin/transactions/view.php?id=<?= intval($row['id']) ?>">
-            <button>View Receipt</button>
-        </a>
-    </td>
+   <td>
+    <a href="../admin/transactions/view.php?id=<?= intval($row['id']) ?>">
+        <button>View Receipt</button>
+    </a>
+</td>
+
 </tr>
 <?php endwhile; ?>
 

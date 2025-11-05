@@ -134,18 +134,20 @@ body {
 
 /* ===== Main Container ===== */
 .main-container {
-    max-width: 1400px;
+    max-width: 100%;
+    width: 100%;
     margin: 0 auto;
-    padding: var(--spacing-lg);
+    padding: var(--spacing-lg) clamp(1rem, 5vw, 4rem);
     min-height: calc(100vh - 200px);
 }
 
 /* ===== Enhanced Product Grid ===== */
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--spacing-lg);
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+    gap: clamp(1rem, 2vw, 2rem);
     margin-top: var(--spacing-lg);
+    width: 100%;
 }
 
 .product-card {

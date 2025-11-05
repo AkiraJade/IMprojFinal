@@ -1,5 +1,5 @@
 <?php
-include '../../includes/config.php';
+include __DIR__ . '/../../includes/config.php';
 
 // ✅ Prevent direct access if not logged in
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'customer') {

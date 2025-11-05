@@ -1,6 +1,5 @@
 <?php 
-include "../includes/header.php"; 
-require_once "../includes/config.php";
+require_once __DIR__ . '/../includes/config.php';
 
 // Get filter parameters
 $category = isset($_GET['category']) ? $_GET['category'] : '';
