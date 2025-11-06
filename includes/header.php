@@ -11,10 +11,11 @@ if (!isset($_SESSION)) { session_start(); }
 <body>
 
 <header class="header">
-    <div class="logo">UrbanThrift</div>
+    <div class="logo"><a href="/IMProj/public/index.php" style="color: inherit; text-decoration: none;">UrbanThrift</a></div>
     <nav>
         <ul>
-            <li><a href="/IMProj/public/index.php">Shop</a></li>
+            <li><a href="/IMProj/public/index.php">Home</a></li>
+            <li><a href="/IMProj/public/shop.php">Shop</a></li>
             <li><a href="/IMProj/public/about.php">About</a></li>
             <li><a href="/IMProj/public/contact.php">Contact</a></li>
 

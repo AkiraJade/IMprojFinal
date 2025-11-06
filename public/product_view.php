@@ -4,7 +4,7 @@ require_once __DIR__ . '/../includes/config.php';
 
 
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
-    header("Location: index.php");
+    header("Location: shop.php");
     exit();
 }
 
@@ -16,7 +16,7 @@ $result = $stmt->get_result();
 $product = $result->fetch_assoc();
 
 if (!$product) {
-    header("Location: index.php");
+    header("Location: shop.php");
     exit();
 }
 
@@ -288,7 +288,7 @@ include '../includes/header.php';
     <!-- Product Info Section -->
     <div class="product-info-section">
         <div class="product-breadcrumb">
-            <a href="index.php">Shop</a> / 
+            <a href="shop.php">Shop</a> / 
             <?= htmlspecialchars($product['category']) ?> / 
             <?= htmlspecialchars($product['name']) ?>
         </div>
@@ -337,7 +337,7 @@ include '../includes/header.php';
 
         <!-- Action Buttons -->
         <div class="action-buttons">
-            <a href="index.php" class="btn-back">
+            <a href="shop.php" class="btn-back">
                 ← Back to Shop
             </a>
             
