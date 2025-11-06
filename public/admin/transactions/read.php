@@ -1,8 +1,7 @@
 <?php
 include __DIR__ . '/../../includes/config.php';
-session_start();
 
-if (!isset($_SESSION['admin_id'])) {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
     header("Location: ../../login.php");
     exit();
 }
@@ -27,16 +26,19 @@ include '../../../includes/header.php';
         <a href="create.php" class="btn-primary">➕ Create Transaction</a>
 
         <table class="styled-table">
-<tr>
+            <thead>
+                <tr>
     <th>ID</th>
     <th>Customer</th>
     <th>Payment Method</th>
     <th>Total Amount</th>
     <th>Date</th>
     <th>Action</th>
-</tr>
+                </tr>
+            </thead>
 
-<?php while ($row = $result->fetch_assoc()): ?>
+            <tbody>
+                <?php while ($row = $result->fetch_assoc()): ?>
 <tr>
     <td><?= htmlspecialchars($row['id']); ?></td>
     <td><?= htmlspecialchars($row['customer_name']); ?></td>
@@ -50,7 +52,8 @@ include '../../../includes/header.php';
            onclick="return confirm('Delete this transaction?');">🗑 Delete</a>
     </td>
 </tr>
-<?php endwhile; ?>
+                <?php endwhile; ?>
+            </tbody>
         </table>
     </main>
 </div>

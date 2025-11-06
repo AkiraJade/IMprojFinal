@@ -1,9 +1,8 @@
 <?php
-include __DIR__ . '/../../includes/config.php';
-session_start();
+include __DIR__ . '/../../../includes/config.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header("Location: ../login.php");
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+    header("Location: ../../login.php");
     exit();
 }
 
@@ -33,22 +32,50 @@ $result = $stmt->get_result();
 $expenses = $result->fetch_assoc()['expense_total'] ?? 0;
 
 $income = $sales - $expenses;
+
+include '../../../includes/header.php';
 ?>
 
-<?php include '../../includes/header.php'; ?>
+<div class="admin-container">
+    <?php include '../sidebar.php'; ?>
 
-<h2>Income Report</h2>
+    <main class="admin-content">
+        <h2>Income Report</h2>
 
-<form method="GET">
-    From: <input type="date" name="from" value="<?= htmlspecialchars($from) ?>">
-    To: <input type="date" name="to" value="<?= htmlspecialchars($to) ?>">
-    <button type="submit">Filter</button>
-</form>
+        <form class="form-box" method="GET">
+            <label>From Date</label>
+            <input type="date" name="from" value="<?= htmlspecialchars($from) ?>">
 
-<table border="1" width="100%">
-    <tr><th>Sales</th><td>₱<?= number_format($sales,2) ?></td></tr>
-    <tr><th>Expenses</th><td>₱<?= number_format($expenses,2) ?></td></tr>
-    <tr><th><strong>Income</strong></th><td><strong>₱<?= number_format($income,2) ?></strong></td></tr>
-</table>
+            <label>To Date</label>
+            <input type="date" name="to" value="<?= htmlspecialchars($to) ?>">
 
-<?php include '../../includes/footer.php'; ?>
+            <button type="submit" class="btn-primary">🔍 Filter</button>
+            <a href="income_report.php" class="btn-secondary">Clear</a>
+        </form>
+
+        <table class="styled-table">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th>Sales</th>
+                    <td>₱<?= number_format($sales,2) ?></td>
+                </tr>
+                <tr>
+                    <th>Expenses</th>
+                    <td>₱<?= number_format($expenses,2) ?></td>
+                </tr>
+                <tr style="font-weight: bold; background: #7B1FA2;">
+                    <th>Net Income</th>
+                    <td>₱<?= number_format($income,2) ?></td>
+                </tr>
+            </tbody>
+        </table>
+    </main>
+</div>
+
+<?php include '../../../includes/footer.php'; ?>

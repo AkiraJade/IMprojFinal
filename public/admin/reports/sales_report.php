@@ -1,9 +1,8 @@
 <?php
-include __DIR__ . '/../../includes/config.php';
-session_start();
+include __DIR__ . '/../../../includes/config.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header("Location: ../login.php");
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+    header("Location: ../../login.php");
     exit();
 }
 
@@ -31,35 +30,50 @@ $stmt2->bind_param("ss", $from, $to);
 $stmt2->execute();
 $total_result = $stmt2->get_result();
 $total = $total_result->fetch_assoc()['total_sales'] ?? 0;
+include '../../../includes/header.php';
 ?>
 
-<?php include '../../includes/header.php'; ?>
+<div class="admin-container">
+    <?php include '../sidebar.php'; ?>
 
-<h2>Sales Report</h2>
+    <main class="admin-content">
+        <h2>Sales Report</h2>
 
-<form method="GET">
-    From: <input type="date" name="from" value="<?= htmlspecialchars($from) ?>">
-    To: <input type="date" name="to" value="<?= htmlspecialchars($to) ?>">
-    <button type="submit">Filter</button>
-</form>
+        <form class="form-box" method="GET">
+            <label>From Date</label>
+            <input type="date" name="from" value="<?= htmlspecialchars($from) ?>">
 
-<p><strong>Total Sales:</strong> ₱<?= number_format($total, 2) ?></p>
+            <label>To Date</label>
+            <input type="date" name="to" value="<?= htmlspecialchars($to) ?>">
 
-<table border="1" width="100%">
-<tr>
+            <button type="submit" class="btn-primary">🔍 Filter</button>
+            <a href="sales_report.php" class="btn-secondary">Clear</a>
+        </form>
+
+        <p><strong>Total Sales:</strong> ₱<?= number_format($total, 2) ?></p>
+
+        <table class="styled-table">
+            <thead>
+                <tr>
     <th>Order ID</th>
     <th>Customer</th>
     <th>Total Amount</th>
     <th>Date</th>
-</tr>
-<?php while($row = $result->fetch_assoc()): ?>
+                </tr>
+            </thead>
+
+            <tbody>
+                <?php while($row = $result->fetch_assoc()): ?>
 <tr>
     <td><?= htmlspecialchars($row['id']) ?></td>
     <td><?= htmlspecialchars($row['customer_name']) ?></td>
     <td>₱<?= number_format($row['total_amount'],2) ?></td>
     <td><?= htmlspecialchars($row['order_date']) ?></td>
 </tr>
-<?php endwhile; ?>
-</table>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
+    </main>
+</div>
 
-<?php include '../../includes/footer.php'; ?>
+<?php include '../../../includes/footer.php'; ?>

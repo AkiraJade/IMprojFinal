@@ -1,8 +1,7 @@
 <?php
 include __DIR__ . '/../../includes/config.php';
-session_start();
 
-if (!isset($_SESSION['admin_id'])) {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
     header("Location: ../../login.php");
     exit();
 }
@@ -42,25 +41,32 @@ if (isset($_POST['update'])) {
 include '../../../includes/header.php';
 ?>
 
-<h2>Edit Supplier</h2>
+<div class="admin-container">
+    <?php include '../sidebar.php'; ?>
 
-<form method="POST">
-    <label>Name:</label><br>
-    <input type="text" name="name" value="<?= $supplier['name']; ?>" required><br><br>
+    <main class="admin-content">
+        <h2>Edit Supplier</h2>
 
-    <label>Contact Person:</label><br>
-    <input type="text" name="contact_person" value="<?= $supplier['contact_person']; ?>" required><br><br>
+        <form class="form-box" method="POST">
+            <label>Name</label>
+            <input type="text" name="name" value="<?= htmlspecialchars($supplier['name']); ?>" required>
 
-    <label>Contact Number:</label><br>
-    <input type="text" name="contact_number" value="<?= $supplier['contact_number']; ?>" required><br><br>
+            <label>Contact Person</label>
+            <input type="text" name="contact_person" value="<?= htmlspecialchars($supplier['contact_person']); ?>" required>
 
-    <label>Email:</label><br>
-    <input type="email" name="email" value="<?= $supplier['email']; ?>" required><br><br>
+            <label>Contact Number</label>
+            <input type="text" name="contact_number" value="<?= htmlspecialchars($supplier['contact_number']); ?>" required>
 
-    <label>Address:</label><br>
-    <textarea name="address" required><?= $supplier['address']; ?></textarea><br><br>
+            <label>Email</label>
+            <input type="email" name="email" value="<?= htmlspecialchars($supplier['email']); ?>" required>
 
-    <button type="submit" name="update">Update Supplier</button>
-</form>
+            <label>Address</label>
+            <textarea name="address" required><?= htmlspecialchars($supplier['address']); ?></textarea>
+
+            <button type="submit" name="update" class="btn-primary">Update Supplier</button>
+            <a href="read.php" class="btn-secondary">Cancel</a>
+        </form>
+    </main>
+</div>
 
 <?php include '../../../includes/footer.php'; ?>

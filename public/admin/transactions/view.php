@@ -1,5 +1,4 @@
 <?php
-session_start();
 include __DIR__ . '/../../../includes/config.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
@@ -60,23 +59,26 @@ $items_q = $stmt->get_result();
 
 <hr>
 
-<table border="1" width="100%">
-<tr>
+<table class="styled-table">
+            <thead>
+                <tr>
     <th>Product</th>
     <th>Qty</th>
     <th>Unit Price</th>
     <th>Subtotal</th>
-</tr>
-
-<?php while ($item = $items_q->fetch_assoc()): ?>
+                </tr>
+            </thead>
+            <tbody>
+                <?php while ($item = $items_q->fetch_assoc()): ?>
 <tr>
     <td><?= htmlspecialchars($item['product_name']); ?></td>
     <td><?= htmlspecialchars($item['quantity']); ?></td>
     <td>₱<?= number_format($item['price'], 2); ?></td>
     <td>₱<?= number_format($item['quantity'] * $item['price'], 2); ?></td>
 </tr>
-<?php endwhile; ?>
-</table>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
 
 <h3>Total: ₱<?= number_format($order['total_amount'], 2); ?></h3>
 

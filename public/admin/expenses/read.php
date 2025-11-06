@@ -49,14 +49,41 @@ if (!empty($params)) {
 $stmt->execute();
 $result = $stmt->get_result();
 
-// Calculate total
+// Calculate total using prepared statement
 $total_query = "SELECT SUM(amount) as total FROM expenses WHERE 1=1";
-if (!empty($search)) $total_query .= " AND description LIKE '%$search%'";
-if (!empty($category)) $total_query .= " AND category = '$category'";
-if (!empty($from_date)) $total_query .= " AND expense_date >= '$from_date'";
-if (!empty($to_date)) $total_query .= " AND expense_date <= '$to_date'";
+$total_params = [];
+$total_types = "";
 
-$total_result = $conn->query($total_query);
+if (!empty($search)) {
+    $total_query .= " AND description LIKE ?";
+    $total_params[] = "%$search%";
+    $total_types .= "s";
+}
+
+if (!empty($category)) {
+    $total_query .= " AND category = ?";
+    $total_params[] = $category;
+    $total_types .= "s";
+}
+
+if (!empty($from_date)) {
+    $total_query .= " AND expense_date >= ?";
+    $total_params[] = $from_date;
+    $total_types .= "s";
+}
+
+if (!empty($to_date)) {
+    $total_query .= " AND expense_date <= ?";
+    $total_params[] = $to_date;
+    $total_types .= "s";
+}
+
+$stmt_total = $conn->prepare($total_query);
+if (!empty($total_params)) {
+    $stmt_total->bind_param($total_types, ...$total_params);
+}
+$stmt_total->execute();
+$total_result = $stmt_total->get_result();
 $total = $total_result->fetch_assoc()['total'] ?? 0;
 
 include '../../../includes/header.php';

@@ -1,8 +1,7 @@
 <?php
 include __DIR__ . '/../../includes/config.php';
-session_start();
 
-if (!isset($_SESSION['admin_id'])) {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
     header("Location: ../../login.php");
     exit();
 }
@@ -51,7 +50,8 @@ include '../../../includes/header.php';
         </form>
 
         <table class="styled-table">
-<tr>
+            <thead>
+                <tr>
     <th>ID</th>
     <th>Name</th>
     <th>Contact Person</th>
@@ -59,9 +59,11 @@ include '../../../includes/header.php';
     <th>Email</th>
     <th>Address</th>
     <th>Actions</th>
-</tr>
+                </tr>
+            </thead>
 
-<?php while($row = $result->fetch_assoc()): ?>
+            <tbody>
+                <?php while($row = $result->fetch_assoc()): ?>
 <tr>
     <td><?= htmlspecialchars($row['id']); ?></td>
     <td><?= htmlspecialchars($row['name']); ?></td>
@@ -76,7 +78,8 @@ include '../../../includes/header.php';
            onclick="return confirm('Delete this supplier?');">🗑 Delete</a>
     </td>
 </tr>
-<?php endwhile; ?>
+                <?php endwhile; ?>
+            </tbody>
         </table>
     </main>
 </div>

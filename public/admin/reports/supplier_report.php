@@ -1,9 +1,8 @@
 <?php
-include __DIR__ . '/../../includes/config.php';
-session_start();
+include __DIR__ . '/../../../includes/config.php';
 
-if (!isset($_SESSION['admin_id'])) {
-    header("Location: ../login.php");
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+    header("Location: ../../login.php");
     exit();
 }
 

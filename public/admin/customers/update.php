@@ -1,8 +1,7 @@
 <?php
 include __DIR__ . '/../../includes/config.php';
-session_start();
 
-if (!isset($_SESSION['admin_id'])) {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
     header("Location: ../../login.php");
     exit();
 }
@@ -39,16 +38,23 @@ if (isset($_POST['update'])) {
 include '../../../includes/header.php';
 ?>
 
-<h2>Edit Customer</h2>
+<div class="admin-container">
+    <?php include '../sidebar.php'; ?>
 
-<form method="POST">
-    <label>Username:</label><br>
-    <input type="text" name="username" value="<?= htmlspecialchars($customer['username']) ?>" required><br><br>
+    <main class="admin-content">
+        <h2>Edit Customer</h2>
 
-    <label>Email:</label><br>
-    <input type="email" name="email" value="<?= htmlspecialchars($customer['email']) ?>" required><br><br>
+        <form class="form-box" method="POST">
+            <label>Username</label>
+            <input type="text" name="username" value="<?= htmlspecialchars($customer['username']) ?>" required>
 
-    <button type="submit" name="update">Update Customer</button>
-</form>
+            <label>Email</label>
+            <input type="email" name="email" value="<?= htmlspecialchars($customer['email']) ?>" required>
+
+            <button type="submit" name="update" class="btn-primary">Update Customer</button>
+            <a href="read.php" class="btn-secondary">Cancel</a>
+        </form>
+    </main>
+</div>
 
 <?php include '../../../includes/footer.php'; ?>

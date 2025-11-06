@@ -1,8 +1,7 @@
 <?php
 include __DIR__ . '/../../includes/config.php';
-session_start();
 
-if (!isset($_SESSION['admin_id'])) {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
     header("Location: ../../login.php");
     exit();
 }
@@ -25,25 +24,32 @@ if (isset($_POST['save'])) {
 include '../../../includes/header.php';
 ?>
 
-<h2>Add Supplier</h2>
+<div class="admin-container">
+    <?php include '../sidebar.php'; ?>
 
-<form method="POST">
-    <label>Name:</label><br>
-    <input type="text" name="name" required><br><br>
+    <main class="admin-content">
+        <h2>Add Supplier</h2>
 
-    <label>Contact Person:</label><br>
-    <input type="text" name="contact_person" required><br><br>
+        <form class="form-box" method="POST">
+            <label>Name</label>
+            <input type="text" name="name" required>
 
-    <label>Contact Number:</label><br>
-    <input type="text" name="contact_number" required><br><br>
+            <label>Contact Person</label>
+            <input type="text" name="contact_person" required>
 
-    <label>Email:</label><br>
-    <input type="email" name="email" required><br><br>
+            <label>Contact Number</label>
+            <input type="text" name="contact_number" required>
 
-    <label>Address:</label><br>
-    <textarea name="address" required></textarea><br><br>
+            <label>Email</label>
+            <input type="email" name="email" required>
 
-    <button type="submit" name="save">Save Supplier</button>
-</form>
+            <label>Address</label>
+            <textarea name="address" required></textarea>
+
+            <button type="submit" name="save" class="btn-primary">Save Supplier</button>
+            <a href="read.php" class="btn-secondary">Cancel</a>
+        </form>
+    </main>
+</div>
 
 <?php include '../../../includes/footer.php'; ?>
