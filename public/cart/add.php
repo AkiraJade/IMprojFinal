@@ -1,15 +1,14 @@
 <?php
-session_start();
 include __DIR__ . '/../../includes/config.php';
 
-if (!isset($_SESSION['customer_id'])) {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'customer') {
     header("Location: ../login.php");
     exit();
 }
 
 if (isset($_GET['id']) && is_numeric($_GET['id'])) { 
     $product_id = intval($_GET['id']);
-    $customer_id = $_SESSION['customer_id'];
+    $customer_id = $_SESSION['user_id'];
 
     // Check if product already exists in cart
     $stmt = $conn->prepare("SELECT id FROM cart WHERE product_id = ? AND customer_id = ?");

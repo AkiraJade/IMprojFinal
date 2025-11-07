@@ -1,16 +1,19 @@
 <?php
 // includes/config.php
 
-// Start session at the very beginning
-session_start();
+// Start session globally
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Database configuration
-$host = "localhost:3306";
+$host = "localhost";
 $user = "root";
 $pass = ""; 
 $dbname = "urbanthrift_db";
+$port = 3306;
 
-$conn = new mysqli($host, $user, $pass, $dbname);
+$conn = new mysqli($host, $user, $pass, $dbname, $port);
 
 if ($conn->connect_error) {
     die("Database connection failed: " . $conn->connect_error);

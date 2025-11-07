@@ -1,13 +1,12 @@
 <?php
-session_start();
 include __DIR__ . '/../../includes/config.php';
 
-if (!isset($_SESSION['customer_id'])) {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'customer') {
     header("Location: ../login.php");
     exit();
 }
 
-$customer_id = $_SESSION['customer_id'];
+$customer_id = $_SESSION['user_id'];
 $stmt = $conn->prepare("SELECT c.id, c.product_id, c.quantity, p.name as product_name, p.price, p.image, p.brand, p.stock
                         FROM cart c 
                         JOIN products p ON c.product_id = p.id 

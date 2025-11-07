@@ -163,3 +163,13 @@ INSERT INTO suppliers (name, contact_person, contact_number, email, address) VAL
 -- =============================================
 -- End of Schema
 -- =============================================
+
+-- update from db
+
+UPDATE users 
+SET password = '$2y$10$E2ZRqfH5j0KxPkhSGHdJ6u6jjPZQ5Nwo4WRZ4MfYUp1MZPX7C8cNy'
+WHERE role = 'admin';
+
+SELECT id, email, password, role FROM users WHERE email = 'admin@urbanthrift.com';
+ALTER TABLE users MODIFY password VARCHAR(255);
+

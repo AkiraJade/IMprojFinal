@@ -39,7 +39,7 @@ include '../../../includes/header.php';
     <td><?= htmlspecialchars($row['role']); ?></td>
     <td><?= htmlspecialchars($row['created_at'] ?? 'N/A'); ?></td>
     <td>
-        <a class="btn-view" href="orders.php?customer_id=<?= intval($row['id']); ?>">📦 Orders</a>
+        <a class="btn-view" href="view.php?id=<?= intval($row['id']); ?>">👁 View</a>
         <a class="btn-edit" href="update.php?id=<?= intval($row['id']); ?>">✏ Edit</a>
         <a class="btn-delete" href="delete.php?id=<?= intval($row['id']); ?>" 
            onclick="return confirm('Delete this customer?');">🗑 Delete</a>

@@ -1,11 +1,22 @@
 <?php
-include __DIR__ . '/../../../includes/config.php';
+require_once __DIR__ . '/../includes/config.php';
 
 $message = "";
 $message_type = "";
 
-if (isset($_GET['registered'])) {
-    $message = "🎉 Registration Successful! Welcome to UrbanThrift!";
+// Check if already logged in
+if (isset($_SESSION['user_id'])) {
+    if ($_SESSION['role'] === 'admin') {
+        header("Location: admin/dashboard.php");
+    } else {
+        header("Location: customer/dashboard.php");
+    }
+    exit();
+}
+
+// Handle registration success message
+if (isset($_GET['registered']) && $_GET['registered'] === 'true') {
+    $message = "✅ Registration successful! Please login.";
     $message_type = "success";
 }
 
@@ -13,36 +24,40 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = trim($_POST['email']);
     $password = $_POST['password'];
 
-    $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    if (empty($email) || empty($password)) {
+        $message = "❌ Please fill in all fields!";
+        $message_type = "error";
+    } else {
+        $stmt = $conn->prepare("SELECT id, username, email, password, role FROM users WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
 
-    if ($result->num_rows == 1) {
-        $row = $result->fetch_assoc();
-
-        // Use plain text comparison for both admin and customer
-        $password_valid = ($password === $row['password']);
-
-        if ($password_valid) {
-            $_SESSION['user_id'] = $row['id'];
-            $_SESSION['role'] = $row['role'];
+        if ($result->num_rows === 1) {
+            $user = $result->fetch_assoc();
             
-            if ($row['role'] == "admin") {
-                $_SESSION['admin_id'] = $row['id'];
-                header("Location: admin/dashboard.php");
+            if (password_verify($password, $user['password'])) {
+                // Set session variables
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['email'] = $user['email'];
+                $_SESSION['role'] = $user['role'];
+
+                // Redirect based on role
+                if ($user['role'] === 'admin') {
+                    header("Location: admin/dashboard.php");
+                } else {
+                    header("Location: customer/dashboard.php");
+                }
+                exit();
             } else {
-                $_SESSION['customer_id'] = $row['id'];
-                header("Location: customer/dashboard.php");
+                $message = "❌ Invalid email or password!";
+                $message_type = "error";
             }
-            exit();
         } else {
-            $message = "❌ Incorrect Password!";
+            $message = "❌ Invalid email or password!";
             $message_type = "error";
         }
-    } else {
-        $message = "❌ Email not found!";
-        $message_type = "error";
     }
 }
 ?>
@@ -92,37 +107,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .orb-1 {
             width: 500px;
             height: 500px;
-            background: radial-gradient(circle, #9b4de0 0%, transparent 70%);
+            background: radial-gradient(circle, #E0AAFF 0%, transparent 70%);
             top: -10%;
-            left: -10%;
+            right: -10%;
             animation-delay: 0s;
         }
 
         .orb-2 {
             width: 400px;
             height: 400px;
-            background: radial-gradient(circle, #C77DFF 0%, transparent 70%);
+            background: radial-gradient(circle, #9b4de0 0%, transparent 70%);
             bottom: -10%;
-            right: -10%;
+            left: -10%;
             animation-delay: 7s;
         }
 
         .orb-3 {
             width: 350px;
             height: 350px;
-            background: radial-gradient(circle, #E0AAFF 0%, transparent 70%);
+            background: radial-gradient(circle, #C77DFF 0%, transparent 70%);
             top: 40%;
-            right: 20%;
+            left: 20%;
             animation-delay: 14s;
         }
 
         @keyframes float {
             0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(50px, -50px) scale(1.1); }
-            66% { transform: translate(-30px, 30px) scale(0.9); }
+            33% { transform: translate(-50px, 50px) scale(1.1); }
+            66% { transform: translate(30px, -30px) scale(0.9); }
         }
 
-        /* Grid Pattern Overlay */
         .grid-overlay {
             position: fixed;
             top: 0;
@@ -146,88 +160,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             min-height: 100vh;
         }
 
-        /* Left Section - Branding */
+        /* Left Section - Login Form */
         .left-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 4rem;
-            position: relative;
-        }
-
-        .brand-content {
-            max-width: 600px;
-            text-align: center;
-        }
-
-        .logo-large {
-            font-size: 5rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, #9b4de0 0%, #C77DFF 50%, #E0AAFF 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 2rem;
-            letter-spacing: -2px;
-            animation: glow 3s ease-in-out infinite;
-        }
-
-        @keyframes glow {
-            0%, 100% { filter: drop-shadow(0 0 20px rgba(155, 77, 224, 0.3)); }
-            50% { filter: drop-shadow(0 0 40px rgba(199, 125, 255, 0.6)); }
-        }
-
-        .brand-tagline {
-            font-size: 1.5rem;
-            color: #B8B8C8;
-            margin-bottom: 1rem;
-            font-weight: 300;
-        }
-
-        .brand-description {
-            font-size: 1.1rem;
-            color: #858596;
-            line-height: 1.8;
-            margin-bottom: 3rem;
-        }
-
-        .feature-list {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem;
-            margin-top: 3rem;
-        }
-
-        .feature-item {
-            background: rgba(155, 77, 224, 0.05);
-            padding: 1.5rem;
-            border-radius: 16px;
-            border: 1px solid rgba(155, 77, 224, 0.1);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-        }
-
-        .feature-item:hover {
-            background: rgba(155, 77, 224, 0.1);
-            transform: translateY(-5px);
-            border-color: rgba(155, 77, 224, 0.3);
-        }
-
-        .feature-icon {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .feature-text {
-            color: #B8B8C8;
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-
-        /* Right Section - Login Form */
-        .right-section {
             flex: 1;
             display: flex;
             justify-content: center;
@@ -274,7 +208,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         .form-header {
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 2.5rem;
         }
 
         .form-title {
@@ -282,7 +216,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             font-weight: 800;
             color: #FFFFFF;
             margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, #FFFFFF 0%, #C77DFF 100%);
+            background: linear-gradient(135deg, #FFFFFF 0%, #E0AAFF 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -293,7 +227,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             font-weight: 400;
         }
 
-        /* Alert Messages */
         .alert {
             padding: 1.25rem;
             border-radius: 16px;
@@ -314,21 +247,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
 
-        .alert.success {
-            background: rgba(0, 217, 165, 0.15);
-            color: #00D9A5;
-            border: 1px solid rgba(0, 217, 165, 0.3);
-        }
-
         .alert.error {
             background: rgba(255, 71, 87, 0.15);
             color: #FF4757;
             border: 1px solid rgba(255, 71, 87, 0.3);
         }
 
-        /* Form Elements */
+        .alert.success {
+            background: rgba(0, 217, 165, 0.15);
+            color: #00D9A5;
+            border: 1px solid rgba(0, 217, 165, 0.3);
+        }
+
         .form-group {
-            margin-bottom: 1.75rem;
+            margin-bottom: 1.5rem;
         }
 
         .form-label {
@@ -336,7 +268,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             margin-bottom: 0.75rem;
             color: #B8B8C8;
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -382,7 +314,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             color: #4A4A54;
         }
 
-        /* Submit Button */
+        .forgot-password {
+            text-align: right;
+            margin-top: 0.5rem;
+        }
+
+        .forgot-password a {
+            color: #9b4de0;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .forgot-password a:hover {
+            color: #C77DFF;
+            text-decoration: underline;
+        }
+
         .btn-submit {
             width: 100%;
             padding: 1.5rem;
@@ -401,6 +350,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 0 0 0 0 rgba(155, 77, 224, 0.4);
             position: relative;
             overflow: hidden;
+            margin-top: 1rem;
         }
 
         .btn-submit::before {
@@ -425,11 +375,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             left: 100%;
         }
 
-        .btn-submit:active {
-            transform: translateY(0);
-        }
-
-        /* Divider */
         .form-divider {
             text-align: center;
             margin: 2rem 0;
@@ -457,7 +402,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             position: relative;
         }
 
-        /* Footer Links */
         .form-footer {
             text-align: center;
             margin-top: 2rem;
@@ -480,47 +424,101 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             text-decoration: underline;
         }
 
-        /* Responsive Design */
+        /* Right Section - Welcome */
+        .right-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem;
+            position: relative;
+        }
+
+        .welcome-content {
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .welcome-logo {
+            font-size: 5rem;
+            margin-bottom: 2rem;
+        }
+
+        .welcome-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #E0AAFF 0%, #C77DFF 50%, #9b4de0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            letter-spacing: -2px;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.3rem;
+            color: #B8B8C8;
+            font-weight: 300;
+            margin-bottom: 3rem;
+            line-height: 1.6;
+        }
+
+        .features-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            text-align: left;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(155, 77, 224, 0.05);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid rgba(155, 77, 224, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            background: rgba(155, 77, 224, 0.1);
+            transform: translateX(10px);
+            border-color: rgba(155, 77, 224, 0.4);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .feature-text {
+            color: #B8B8C8;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        /* Responsive */
         @media (max-width: 1024px) {
             .login-container {
-                flex-direction: column;
+                flex-direction: column-reverse;
             }
 
-            .left-section {
+            .left-section, .right-section {
                 padding: 2rem;
             }
 
-            .logo-large {
-                font-size: 3.5rem;
-            }
-
-            .feature-list {
-                grid-template-columns: 1fr;
-            }
-
-            .right-section {
-                padding: 2rem;
-            }
-
-            .form-wrapper {
-                padding: 2rem;
-            }
-
-            .form-title {
+            .welcome-title {
                 font-size: 2.5rem;
             }
         }
 
         @media (max-width: 640px) {
-            .logo-large {
-                font-size: 2.5rem;
-            }
-
-            .brand-tagline {
-                font-size: 1.2rem;
-            }
-
             .form-title {
+                font-size: 2rem;
+            }
+
+            .welcome-title {
                 font-size: 2rem;
             }
 
@@ -531,7 +529,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </style>
 </head>
 <body>
-    <!-- Animated Background -->
     <div class="bg-animation">
         <div class="gradient-orb orb-1"></div>
         <div class="gradient-orb orb-2"></div>
@@ -539,46 +536,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </div>
     <div class="grid-overlay"></div>
 
-    <!-- Main Container -->
     <div class="login-container">
-        <!-- Left Section - Branding -->
+        <!-- Left Section - Form -->
         <div class="left-section">
-            <div class="brand-content">
-                <div class="logo-large">UrbanThrift</div>
-                <div class="brand-tagline">Sustainable Fashion, Smart Shopping</div>
-                <div class="brand-description">
-                    Join the revolution in thrift shopping. Discover unique pieces, 
-                    support sustainability, and save money while looking amazing.
-                </div>
-
-                <div class="feature-list">
-                    <div class="feature-item">
-                        <div class="feature-icon">♻️</div>
-                        <div class="feature-text">Eco-Friendly Fashion</div>
-                    </div>
-                    <div class="feature-item">
-                        <div class="feature-icon">💰</div>
-                        <div class="feature-text">Unbeatable Prices</div>
-                    </div>
-                    <div class="feature-item">
-                        <div class="feature-icon">✨</div>
-                        <div class="feature-text">Unique Finds</div>
-                    </div>
-                    <div class="feature-item">
-                        <div class="feature-icon">🚀</div>
-                        <div class="feature-text">Fast Delivery</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Section - Login Form -->
-        <div class="right-section">
             <div class="form-wrapper">
                 <div class="form-content">
                     <div class="form-header">
                         <h1 class="form-title">Welcome Back</h1>
-                        <p class="form-subtitle">Sign in to continue shopping</p>
+                        <p class="form-subtitle">Sign in to continue your journey</p>
                     </div>
 
                     <?php if($message): ?>
@@ -587,7 +552,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </div>
                     <?php endif; ?>
 
-                    <form method="POST">
+                    <form method="POST" id="loginForm">
                         <div class="form-group">
                             <label class="form-label">Email Address</label>
                             <div class="input-wrapper">
@@ -595,7 +560,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                        name="email" 
                                        class="form-input" 
                                        placeholder="your.email@example.com" 
-                                       required>
+                                       required
+                                       value="<?= isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '' ?>">
                                 <span class="input-icon">📧</span>
                             </div>
                         </div>
@@ -609,6 +575,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                        placeholder="Enter your password" 
                                        required>
                                 <span class="input-icon">🔒</span>
+                            </div>
+                            <div class="forgot-password">
+                                <a href="#">Forgot Password?</a>
                             </div>
                         </div>
 
@@ -626,6 +595,47 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             Don't have an account? 
                             <a href="register.php">Create Account</a>
                         </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Section - Welcome -->
+        <div class="right-section">
+            <div class="welcome-content">
+                <div class="welcome-logo">🛍️</div>
+                <h2 class="welcome-title">UrbanThrift</h2>
+                <p class="welcome-subtitle">
+                    Your gateway to sustainable fashion and conscious shopping
+                </p>
+
+                <div class="features-list">
+                    <div class="feature-item">
+                        <div class="feature-icon">🌱</div>
+                        <div class="feature-text">
+                            <strong>Eco-Friendly Shopping</strong> - Every purchase makes a difference
+                        </div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">💎</div>
+                        <div class="feature-text">
+                            <strong>Premium Quality</strong> - Curated collection of the best thrift finds
+                        </div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">🚚</div>
+                        <div class="feature-text">
+                            <strong>Fast Delivery</strong> - Get your items delivered quickly and safely
+                        </div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">🔐</div>
+                        <div class="feature-text">
+                            <strong>Secure Platform</strong> - Your data and transactions are protected
+                        </div>
                     </div>
                 </div>
             </div>

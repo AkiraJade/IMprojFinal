@@ -48,6 +48,7 @@ include '../../../includes/header.php';
     <td><?= htmlspecialchars($row['order_date']); ?></td>
     <td>
         <a class="btn-view" href="view.php?id=<?= intval($row['id']); ?>">👁 View</a>
+        <a class="btn-edit" href="update.php?id=<?= intval($row['id']); ?>">✏ Edit</a>
         <a class="btn-primary" href="receipt_print.php?id=<?= intval($row['id']); ?>" target="_blank">🖨️ Print</a>
         <a class="btn-delete" href="delete.php?id=<?= intval($row['id']); ?>" 
            onclick="return confirm('Delete this transaction?');">🗑 Delete</a>

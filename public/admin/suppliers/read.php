@@ -37,6 +37,7 @@ include '../../../includes/header.php';
     <main class="admin-content">
         <h2>Suppliers List</h2>
         <a href="create.php" class="btn-primary">➕ Add Supplier</a>
+        <a href="view_products.php" class="btn-primary">📦 View Products by Supplier</a>
 
         <!-- Search Form -->
         <form method="GET" class="form-box" style="margin: 20px 0;">

@@ -1,13 +1,12 @@
 <?php
-session_start();
 include __DIR__ . '/../../includes/config.php';
 
-if (!isset($_SESSION['customer_id'])) {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'customer') {
     header("Location: ../login.php");
     exit();
 }
 
-$customer_id = $_SESSION['customer_id'];
+$customer_id = $_SESSION['user_id'];
 $message = "";
 $message_type = "";
 
