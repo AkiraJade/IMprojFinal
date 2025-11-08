@@ -26,12 +26,13 @@ if (!$customer) {
 if (isset($_POST['update'])) {
     $username = trim($_POST['username']);
     $email = trim($_POST['email']);
+    $role = trim($_POST['role']);
 
-    $stmt = $conn->prepare("UPDATE users SET username = ?, email = ? WHERE id = ?");
-    $stmt->bind_param("ssi", $username, $email, $id);
+    $stmt = $conn->prepare("UPDATE users SET username = ?, email = ?, role = ? WHERE id = ?");
+    $stmt->bind_param("sssi", $username, $email, $role, $id);
     $stmt->execute();
     
-    header("Location: read.php");
+    header("Location: read.php?msg=User updated successfully");
     exit();
 }
 
@@ -42,7 +43,7 @@ include '../../../includes/header.php';
     <?php include '../sidebar.php'; ?>
 
     <main class="admin-content">
-        <h2>Edit Customer</h2>
+        <h2>Edit User</h2>
 
         <form class="form-box" method="POST">
             <label>Username</label>
@@ -51,7 +52,13 @@ include '../../../includes/header.php';
             <label>Email</label>
             <input type="email" name="email" value="<?= htmlspecialchars($customer['email']) ?>" required>
 
-            <button type="submit" name="update" class="btn-primary">Update Customer</button>
+            <label>Role</label>
+            <select name="role" required>
+                <option value="customer" <?= $customer['role'] == 'customer' ? 'selected' : '' ?>>Customer</option>
+                <option value="admin" <?= $customer['role'] == 'admin' ? 'selected' : '' ?>>Admin</option>
+            </select>
+
+            <button type="submit" name="update" class="btn-primary">Update User</button>
             <a href="read.php" class="btn-secondary">Cancel</a>
         </form>
     </main>

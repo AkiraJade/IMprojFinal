@@ -11,6 +11,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $confirm_password = $_POST['confirm_password'];
     $phone = trim($_POST['phone']);
     $address = trim($_POST['address']);
+    $profile_photo = null;
 
     // Validation
     if ($password !== $confirm_password) {
@@ -35,9 +36,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $message = "❌ Email already registered!";
             $message_type = "error";
         } else {
+            // Handle profile photo upload
+            if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] == 0) {
+                $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                if (in_array($_FILES['profile_photo']['type'], $allowed_types)) {
+                    $file_extension = pathinfo($_FILES['profile_photo']['name'], PATHINFO_EXTENSION);
+                    $profile_photo = uniqid() . '_' . time() . '.' . $file_extension;
+                    $upload_dir = __DIR__ . '/uploads/profiles/';
+                    
+                    // Create directory if it doesn't exist
+                    if (!file_exists($upload_dir)) {
+                        mkdir($upload_dir, 0777, true);
+                    }
+                    
+                    move_uploaded_file($_FILES['profile_photo']['tmp_name'], $upload_dir . $profile_photo);
+                }
+            }
+
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("INSERT INTO users (username, email, password, phone, address) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssss", $username, $email, $hashed_password, $phone, $address);
+            $stmt = $conn->prepare("INSERT INTO users (username, email, password, phone, address, profile_photo) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssssss", $username, $email, $hashed_password, $phone, $address, $profile_photo);
 
             if ($stmt->execute()) {
                 header("Location: login.php?registered=true");
@@ -544,7 +562,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </div>
                     <?php endif; ?>
 
-                    <form method="POST" id="registerForm">
+                    <form method="POST" id="registerForm" enctype="multipart/form-data">
                         <div class="form-group">
                             <label class="form-label">Full Name</label>
                             <div class="input-wrapper">
@@ -590,6 +608,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                        placeholder="Your complete address" 
                                        required>
                                 <span class="input-icon">📍</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Profile Photo (Optional)</label>
+                            <div class="input-wrapper">
+                                <input type="file" 
+                                       name="profile_photo" 
+                                       class="form-input" 
+                                       accept="image/*"
+                                       style="padding: 0.75rem;">
+                                <span class="input-icon">📷</span>
                             </div>
                         </div>
 

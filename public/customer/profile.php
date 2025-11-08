@@ -21,14 +21,37 @@ if (isset($_POST['update'])) {
     $email = trim($_POST['email']);
     $phone = trim($_POST['phone']);
     $address = trim($_POST['address']);
+    $profile_photo = $user['profile_photo']; // Keep existing photo by default
 
     // Validate
     if (empty($username) || empty($email) || empty($phone) || empty($address)) {
         $message = "All fields are required!";
         $message_type = "error";
     } else {
-        $stmt = $conn->prepare("UPDATE users SET username = ?, email = ?, phone = ?, address = ? WHERE id = ?");
-        $stmt->bind_param("ssssi", $username, $email, $phone, $address, $customer_id);
+        // Handle profile photo upload
+        if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] == 0) {
+            $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (in_array($_FILES['profile_photo']['type'], $allowed_types)) {
+                $file_extension = pathinfo($_FILES['profile_photo']['name'], PATHINFO_EXTENSION);
+                $profile_photo = uniqid() . '_' . time() . '.' . $file_extension;
+                $upload_dir = __DIR__ . '/../uploads/profiles/';
+                
+                // Create directory if it doesn't exist
+                if (!file_exists($upload_dir)) {
+                    mkdir($upload_dir, 0777, true);
+                }
+                
+                // Delete old photo if exists
+                if ($user['profile_photo'] && file_exists($upload_dir . $user['profile_photo'])) {
+                    unlink($upload_dir . $user['profile_photo']);
+                }
+                
+                move_uploaded_file($_FILES['profile_photo']['tmp_name'], $upload_dir . $profile_photo);
+            }
+        }
+
+        $stmt = $conn->prepare("UPDATE users SET username = ?, email = ?, phone = ?, address = ?, profile_photo = ? WHERE id = ?");
+        $stmt->bind_param("sssssi", $username, $email, $phone, $address, $profile_photo, $customer_id);
         
         if ($stmt->execute()) {
             $message = "Profile updated successfully!";
@@ -301,8 +324,22 @@ include '../../includes/header.php';
                 <?= strtoupper(substr($user['username'], 0, 1)) ?>
             </div>
 
-            <form method="POST" id="profileForm">
+            <form method="POST" id="profileForm" enctype="multipart/form-data">
                 <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Profile Photo</label>
+                        <?php if ($user['profile_photo']): ?>
+                            <img src="<?= BASE_URL ?>/uploads/profiles/<?= htmlspecialchars($user['profile_photo']) ?>" 
+                                 style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem; border: 3px solid var(--primary);">
+                        <?php endif; ?>
+                        <input type="file" 
+                               name="profile_photo" 
+                               class="form-input" 
+                               accept="image/*"
+                               id="photoInput"
+                               disabled>
+                    </div>
+
                     <div class="form-group">
                         <label class="form-label">Full Name</label>
                         <input type="text" 
@@ -375,7 +412,7 @@ include '../../includes/header.php';
 </div>
 
 <script>
-    const inputs = ['usernameInput', 'emailInput', 'phoneInput', 'addressInput'];
+    const inputs = ['usernameInput', 'emailInput', 'phoneInput', 'addressInput', 'photoInput'];
     
     function enableEdit() {
         // Enable all inputs

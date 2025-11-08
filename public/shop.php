@@ -335,7 +335,7 @@ $categories_query = $conn->query("SELECT DISTINCT category FROM products WHERE s
     <?php if ($result->num_rows > 0): ?>
     <div class="grid">
         <?php while($row = $result->fetch_assoc()): ?>
-        <div class="product-card" onclick="location.href='product_view.php?id=<?= intval($row['id']); ?>'">
+        <div class="product-card" onclick="location.href='product_details.php?id=<?= intval($row['id']); ?>'">
             <?php if ($row['stock'] <= 5): ?>
                 <span class="product-badge">Only <?= $row['stock'] ?> Left!</span>
             <?php endif; ?>
@@ -357,7 +357,7 @@ $categories_query = $conn->query("SELECT DISTINCT category FROM products WHERE s
                 <strong style="font-size: 1.5rem; color: var(--primary-light);">
                     ₱<?= number_format($row['price'],2); ?>
                 </strong>
-                <a href="product_view.php?id=<?= intval($row['id']); ?>" 
+                <a href="product_details.php?id=<?= intval($row['id']); ?>" 
                    class="quick-view-btn"
                    onclick="event.stopPropagation();">
                     View Details

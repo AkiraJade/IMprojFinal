@@ -17,7 +17,9 @@ CREATE TABLE users (
     password VARCHAR(255) NOT NULL,
     phone VARCHAR(20) NULL,
     address TEXT NULL,
+    profile_photo VARCHAR(255) NULL,
     role ENUM('admin', 'customer') DEFAULT 'customer',
+    is_active TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -103,6 +105,7 @@ CREATE TABLE orders (
     payment_method VARCHAR(50) DEFAULT 'Cash',
     total_amount DECIMAL(10,2) NOT NULL,
     status ENUM('Pending', 'Processing', 'Completed', 'Cancelled') DEFAULT 'Pending',
+    email_sent TINYINT(1) DEFAULT 0,
     FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -159,6 +162,65 @@ VALUES ('admin', 'admin@urbanthrift.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3R
 -- Sample Supplier
 INSERT INTO suppliers (name, contact_person, contact_number, email, address) VALUES
 ('Thrift Wholesale Inc', 'John Doe', '+639171234567', 'contact@thriftwholesale.com', '123 Main St, Manila');
+
+-- =============================================
+-- Table: product_reviews
+-- Customer comments/reviews on products
+-- =============================================
+CREATE TABLE product_reviews (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    user_id INT NOT NULL,
+    comment TEXT NOT NULL,
+    rating INT DEFAULT 5,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =============================================
+-- Table: product_images
+-- Multiple images per product
+-- =============================================
+CREATE TABLE product_images (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    image_path VARCHAR(255) NOT NULL,
+    is_primary TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =============================================
+-- MySQL VIEW: order_details_view
+-- Complete order transaction details
+-- =============================================
+CREATE OR REPLACE VIEW order_details_view AS
+SELECT 
+    o.id AS order_id,
+    o.order_date,
+    o.total_amount,
+    o.status AS order_status,
+    o.payment_method,
+    c.id AS customer_id,
+    c.name AS customer_name,
+    c.email AS customer_email,
+    c.contact_number AS customer_phone,
+    oi.id AS order_item_id,
+    oi.quantity,
+    oi.price AS item_price,
+    (oi.quantity * oi.price) AS item_subtotal,
+    p.id AS product_id,
+    p.name AS product_name,
+    p.brand AS product_brand,
+    p.category AS product_category,
+    p.size AS product_size
+FROM orders o
+JOIN customers c ON o.customer_id = c.id
+JOIN order_items oi ON o.id = oi.order_id
+JOIN products p ON oi.product_id = p.id
+ORDER BY o.order_date DESC, o.id, oi.id;
 
 -- =============================================
 -- End of Schema

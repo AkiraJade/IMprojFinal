@@ -28,7 +28,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $message = "❌ Please fill in all fields!";
         $message_type = "error";
     } else {
-        $stmt = $conn->prepare("SELECT id, username, email, password, role FROM users WHERE email = ?");
+        $stmt = $conn->prepare("SELECT id, username, email, password, role, is_active FROM users WHERE email = ?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -36,7 +36,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($result->num_rows === 1) {
             $user = $result->fetch_assoc();
             
-            if (password_verify($password, $user['password'])) {
+            // Check if account is active
+            $is_active = isset($user['is_active']) ? $user['is_active'] : 1;
+            if (!$is_active) {
+                $message = "❌ Your account has been deactivated. Please contact admin.";
+                $message_type = "error";
+            } elseif (password_verify($password, $user['password'])) {
                 // Set session variables
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
