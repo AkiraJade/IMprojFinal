@@ -257,6 +257,17 @@ CREATE TABLE supplier_products (
     UNIQUE KEY unique_supplier_product (supplier_id, product_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS contact_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    phone VARCHAR(20),
+    subject VARCHAR(200) NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status ENUM('unread', 'read', 'replied') DEFAULT 'unread'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Update supplier_deliveries to reference supplier_products
 ALTER TABLE supplier_deliveries
 MODIFY COLUMN product_id INT NULL,
@@ -309,3 +320,7 @@ DESCRIBE users;
 SELECT * FROM orders;
 
 DESCRIBE urbanthrift_db.supplier_deliveries;
+
+SHOW CREATE TABLE product_reviews;
+
+SELECT * FROM product_reviews;
