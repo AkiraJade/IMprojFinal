@@ -17,6 +17,14 @@ $result = $stmt->get_result();
 $user = $result->fetch_assoc();
 
 if (isset($_POST['update'])) {
+    // Enable error reporting for debugging
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+    
+    // Log the POST data
+    error_log("POST data: " . print_r($_POST, true));
+    error_log("FILES data: " . print_r($_FILES, true));
+    
     $username = trim($_POST['username']);
     $email = trim($_POST['email']);
     $phone = trim($_POST['phone']);
@@ -50,21 +58,59 @@ if (isset($_POST['update'])) {
             }
         }
 
-        $stmt = $conn->prepare("UPDATE users SET username = ?, email = ?, phone = ?, address = ?, profile_photo = ? WHERE id = ?");
-        $stmt->bind_param("sssssi", $username, $email, $phone, $address, $profile_photo, $customer_id);
+        // Log the values being updated
+        error_log("Updating profile with values - Username: $username, Email: $email, Phone: $phone, Address: $address, Photo: $profile_photo, UserID: $customer_id");
         
-        if ($stmt->execute()) {
-            $message = "Profile updated successfully!";
-            $message_type = "success";
-            // Refresh user data
-            $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
-            $stmt->bind_param("i", $customer_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $user = $result->fetch_assoc();
-        } else {
-            $message = "Update failed!";
+        $stmt = $conn->prepare("UPDATE users SET username = ?, email = ?, phone = ?, address = ?, profile_photo = ? WHERE id = ?");
+        if (!$stmt) {
+            error_log("Prepare failed: " . $conn->error);
+            $message = "Database error. Please try again later.";
             $message_type = "error";
+        } else {
+            $stmt->bind_param("sssssi", $username, $email, $phone, $address, $profile_photo, $customer_id);
+            
+            if ($stmt->execute()) {
+                // Check if any rows were affected
+                if ($stmt->affected_rows > 0) {
+                    // Send profile update notification
+                    require_once __DIR__ . '/../../includes/EmailService.php';
+                    $emailService = new EmailService();
+                    
+                    // Get updated user data
+                    $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
+                    $stmt->bind_param("i", $customer_id);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    $user = $result->fetch_assoc();
+                    
+                    // Send notification email
+                    $emailService->sendProfileUpdateNotification([
+                        'id' => $user['id'],
+                        'name' => $user['username'],
+                        'email' => $user['email'],
+                        'phone' => $user['phone'],
+                        'address' => $user['address']
+                    ]);
+                    
+                    $message = "Profile updated successfully! A confirmation has been sent to your email.";
+                    $message_type = "success";
+                    
+                    // Clear any POST data to prevent resubmission
+                    $_POST = array();
+                } else {
+                    $message = "No changes were made to your profile.";
+                    $message_type = "info";
+                }
+            } else {
+                $error_message = $stmt->error ?: $conn->error;
+                $message = "Update failed: " . $error_message;
+                $message_type = "error";
+                
+                // Log the error for debugging
+                error_log("Profile update error: " . $error_message);
+                error_log("POST data: " . print_r($_POST, true));
+                error_log("SQL: UPDATE users SET username = '$username', email = '$email', phone = '$phone', address = '$address', profile_photo = '$profile_photo' WHERE id = $customer_id");
+            }
         }
     }
 }
@@ -262,6 +308,17 @@ include '../../includes/header.php';
             color: white;
             box-shadow: 0 10px 30px rgba(155, 77, 224, 0.3);
         }
+        
+        .error-message {
+            color: #ff4444;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+        
+        input.error, textarea.error {
+            border-color: #ff4444 !important;
+        }
 
         .btn-primary:hover {
             transform: translateY(-3px);
@@ -324,7 +381,7 @@ include '../../includes/header.php';
                 <?= strtoupper(substr($user['username'], 0, 1)) ?>
             </div>
 
-            <form method="POST" id="profileForm" enctype="multipart/form-data" novalidate>
+            <form method="POST" id="profileForm" enctype="multipart/form-data" onsubmit="return validateForm()">
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Profile Photo</label>
@@ -410,7 +467,7 @@ include '../../includes/header.php';
                 </div>
 
                 <div class="form-actions" id="editMode">
-                    <button type="submit" name="update" class="btn btn-primary">
+                    <button type="submit" name="update" class="btn btn-primary" onclick="return validateForm()">
                         ✅ Save Changes
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="cancelEdit()">
@@ -427,12 +484,143 @@ include '../../includes/header.php';
 </div>
 
 <script>
+    const form = document.getElementById('profileForm');
     const inputs = ['usernameInput', 'emailInput', 'phoneInput', 'addressInput', 'photoInput'];
+    
+    // Function to validate a single input
+    function validateInput(input) {
+        const value = input.value.trim();
+        const required = input.getAttribute('data-required') === 'true';
+        const minLength = input.getAttribute('data-min-length');
+        const maxLength = input.getAttribute('data-max-length');
+        const pattern = input.getAttribute('data-pattern');
+        const errorMessage = input.getAttribute('data-pattern-message') || 'Invalid input';
+        
+        // Check required field
+        if (required && !value) {
+            showError(input, 'This field is required');
+            return false;
+        }
+        
+        // Check min length
+        if (minLength && value.length < parseInt(minLength)) {
+            showError(input, `Must be at least ${minLength} characters`);
+            return false;
+        }
+        
+        // Check max length
+        if (maxLength && value.length > parseInt(maxLength)) {
+            showError(input, `Must be less than ${maxLength} characters`);
+            return false;
+        }
+        
+        // Check pattern
+        if (pattern && value) {
+            const regex = new RegExp(pattern);
+            if (!regex.test(value)) {
+                showError(input, errorMessage);
+                return false;
+            }
+        }
+        
+        // If all validations pass
+        clearError(input);
+        return true;
+    }
+    
+    // Function to show error message
+    function showError(input, message) {
+        const formGroup = input.closest('.form-group') || input.closest('.form-textarea').closest('.form-group');
+        let errorElement = formGroup.querySelector('.error-message');
+        
+        if (!errorElement) {
+            errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
+            formGroup.appendChild(errorElement);
+        }
+        
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+        input.style.borderColor = '#ff4444';
+    }
+    
+    // Function to clear error message
+    function clearError(input) {
+        const formGroup = input.closest('.form-group') || input.closest('.form-textarea').closest('.form-group');
+        const errorElement = formGroup?.querySelector('.error-message');
+        
+        if (errorElement) {
+            errorElement.style.display = 'none';
+        }
+        
+        if (input) {
+            input.style.borderColor = '';
+        }
+    }
+    
+    // Function to validate all inputs
+    function validateForm() {
+        // Prevent the default form submission
+        event.preventDefault();
+        
+        let isValid = true;
+        
+        inputs.forEach(id => {
+            const input = document.getElementById(id);
+            if (input && !input.disabled) {
+                if (!validateInput(input)) {
+                    isValid = false;
+                }
+            }
+        });
+        
+        if (isValid) {
+            // If form is valid, submit it programmatically
+            const form = document.getElementById('profileForm');
+            const formData = new FormData(form);
+            
+            // Add a hidden field to indicate form submission
+            formData.append('update', '1');
+            
+            // Submit the form using fetch API
+            fetch(form.action || window.location.href, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    return response.text();
+                }
+            })
+            .then(html => {
+                // If we get here, the form submission failed
+                document.documentElement.innerHTML = html;
+                // Try to show any error messages
+                const errorDiv = document.querySelector('.alert.error');
+                if (errorDiv) {
+                    errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while saving your profile. Please try again.');
+            });
+        }
+        
+        return false; // Always return false to prevent default form submission
+    }
     
     function enableEdit() {
         // Enable all inputs
         inputs.forEach(id => {
-            document.getElementById(id).disabled = false;
+            const input = document.getElementById(id);
+            if (input) {
+                input.disabled = false;
+                // Add event listeners for validation
+                input.addEventListener('blur', () => validateInput(input));
+            }
         });
         
         // Toggle buttons
@@ -444,43 +632,75 @@ include '../../includes/header.php';
     }
     
     function cancelEdit() {
-        // Disable all inputs
+        // Disable all inputs and clear errors
         inputs.forEach(id => {
-            document.getElementById(id).disabled = true;
-            // Reset to original values if needed
+            const input = document.getElementById(id);
+            if (input) {
+                input.disabled = true;
+                clearError(input);
+            }
         });
+        
+        // Reset form to original values
+        const form = document.getElementById('profileForm');
+        form.reset();
         
         // Toggle buttons
         document.getElementById('viewMode').style.display = 'flex';
         document.getElementById('editMode').style.display = 'none';
         
         // Reset any validation errors
-        const form = document.getElementById('profileForm');
-        const errorMessages = form.querySelectorAll('.invalid-feedback');
-        errorMessages.forEach(error => error.remove());
+        const errorMessages = document.querySelectorAll('.error-message');
+        errorMessages.forEach(error => error.style.display = 'none');
         
-        const invalidInputs = form.querySelectorAll('.is-invalid');
-        invalidInputs.forEach(input => input.classList.remove('is-invalid'));
+        // Reset image preview if exists
+        const profileImage = document.getElementById('profileImage');
+        if (profileImage) {
+            profileImage.src = '<?= BASE_URL ?>/uploads/profiles/<?= htmlspecialchars($user['profile_photo'] ?? '') ?>';
+        }
     }
     
     function previewImage(input) {
         if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            const profileImage = document.getElementById('profileImage');
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(input.files[0].type)) {
+                showError(input, 'Please upload a valid image file (JPG, PNG, GIF, or WebP)');
+                input.value = ''; // Clear the file input
+                return;
+            }
             
+            // Validate file size (max 2MB)
+            const maxSize = 2 * 1024 * 1024; // 2MB
+            if (input.files[0].size > maxSize) {
+                showError(input, 'Image size should be less than 2MB');
+                input.value = ''; // Clear the file input
+                return;
+            }
+            
+            // Clear any previous errors
+            clearError(input);
+            
+            // Preview the image
+            const reader = new FileReader();
             reader.onload = function(e) {
+                const profileImage = document.getElementById('profileImage');
                 if (profileImage) {
                     profileImage.src = e.target.result;
                 } else {
-                    // Create image element if it doesn't exist
+                    // If no image element exists, create one
                     const img = document.createElement('img');
                     img.id = 'profileImage';
                     img.src = e.target.result;
-                    img.style = 'width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem; border: 3px solid var(--primary);';
+                    img.style.width = '100px';
+                    img.style.height = '100px';
+                    img.style.borderRadius = '50%';
+                    img.style.objectFit = 'cover';
+                    img.style.marginBottom = '1rem';
+                    img.style.border = '3px solid var(--primary)';
                     input.parentNode.insertBefore(img, input);
                 }
-            };
-            
+            }
             reader.readAsDataURL(input.files[0]);
         }
     }
@@ -489,12 +709,6 @@ include '../../includes/header.php';
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('profileForm');
         
-        // Add event listener for form submission
-        form.addEventListener('submit', function(e) {
-            // Let the form validation script handle the validation
-            // This will be handled by form-validation.js
-        });
-        
         // Add input event listeners for real-time validation
         inputs.forEach(id => {
             const input = document.getElementById(id);
@@ -502,8 +716,7 @@ include '../../includes/header.php';
                 input.addEventListener('blur', function() {
                     if (!input.disabled) {
                         // Trigger validation for this field
-                        const event = new Event('blur');
-                        input.dispatchEvent(event);
+                        validateInput(input);
                     }
                 });
             }

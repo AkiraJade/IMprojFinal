@@ -40,7 +40,8 @@ $stmt = $conn->prepare("
 ");
 $stmt->bind_param("i", $order_id);
 $stmt->execute();
-$items = $stmt->get_result();
+$result = $stmt->get_result();
+$items = $result->fetch_all(MYSQLI_ASSOC);
 
 $message = "";
 $message_type = "";
@@ -49,6 +50,12 @@ $message_type = "";
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $payment_method = trim($_POST['payment_method']);
     $status = trim($_POST['status']);
+    
+    // Get current status before update
+    $stmt = $conn->prepare("SELECT status FROM orders WHERE id = ?");
+    $stmt->bind_param("i", $order_id);
+    $stmt->execute();
+    $current_status = $stmt->get_result()->fetch_assoc()['status'];
     
     // Update order
     $stmt = $conn->prepare("UPDATE orders SET payment_method = ?, status = ? WHERE id = ?");
@@ -68,6 +75,50 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt->bind_param("i", $order_id);
         $stmt->execute();
         $order = $stmt->get_result()->fetch_assoc();
+        
+        // Send status update email if status changed
+        if ($current_status !== $status) {
+            require_once __DIR__ . '/../../../includes/EmailService.php';
+            $emailService = new EmailService();
+            
+            // Get order items for the email
+            $stmt = $conn->prepare("
+                SELECT oi.*, p.name as product_name
+                FROM order_items oi
+                JOIN products p ON oi.product_id = p.id
+                WHERE oi.order_id = ?
+            ");
+            $stmt->bind_param("i", $order_id);
+            $stmt->execute();
+            $items_result = $stmt->get_result();
+            $items = [];
+            while ($row = $items_result->fetch_assoc()) {
+                $items[] = $row;
+            }
+            
+            // Prepare order data for email
+            $order_data = [
+                'id' => $order_id,
+                'order_number' => 'ORD' . str_pad($order_id, 6, '0', STR_PAD_LEFT),
+                'total_amount' => $order['total_amount'],
+                'created_at' => $order['order_date'],
+                'items' => $items,
+                'payment_method' => $payment_method,
+                'status' => $status,
+                'tracking_number' => $order['tracking_number'] ?? null
+            ];
+            
+            // Send status update email
+            $emailService->sendOrderStatusUpdate(
+                $order_data,
+                [
+                    'id' => $order['customer_id'],
+                    'name' => $order['customer_name'],
+                    'email' => $order['customer_email']
+                ],
+                $status
+            );
+        }
     } else {
         $message = "❌ Failed to update order.";
         $message_type = "error";
@@ -130,15 +181,15 @@ require_once __DIR__ . '/../../../includes/header.php';
                 </tr>
             </thead>
             <tbody>
-                <?php while($item = $items->fetch_assoc()): ?>
+                <?php foreach($items as $item): ?>
                 <tr>
-                    <td><img src="<?= BASE_URL ?>/uploads/<?= htmlspecialchars($item['image']) ?>" height="50" style="border-radius: 8px;" alt="<?= htmlspecialchars($item['product_name']) ?>"></td>
+                    <td><img src="/IMprojFinal/public/uploads/<?= htmlspecialchars($item['image']) ?>" height="50" style="border-radius: 8px;" alt="<?= htmlspecialchars($item['product_name']) ?>"></td>
                     <td><?= htmlspecialchars($item['product_name']) ?></td>
                     <td><?= $item['quantity'] ?></td>
                     <td>₱<?= number_format($item['price'], 2) ?></td>
                     <td>₱<?= number_format($item['price'] * $item['quantity'], 2) ?></td>
                 </tr>
-                <?php endwhile; ?>
+                <?php endforeach; ?>
             </tbody>
             <tfoot>
                 <tr style="background: rgba(155, 77, 224, 0.1); font-weight: 700;">
