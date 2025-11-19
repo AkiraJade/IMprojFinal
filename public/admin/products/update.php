@@ -135,16 +135,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $file_type = $_FILES["image"]["type"];
                 
                 if (in_array($file_type, $allowed_types)) {
+                    // Create uploads directory if it doesn't exist
+                    $upload_dir = __DIR__ . '/../../../public/uploads/';
+                    if (!file_exists($upload_dir)) {
+                        mkdir($upload_dir, 0777, true);
+                    }
+                    
                     // Generate unique filename
                     $file_extension = pathinfo($_FILES["image"]["name"], PATHINFO_EXTENSION);
                     $imageName = uniqid() . '.' . $file_extension;
-                    $target = "../../uploads/" . $imageName;
+                    $target = $upload_dir . $imageName;
                     
                     // Move uploaded file
                     if (move_uploaded_file($_FILES["image"]["tmp_name"], $target)) {
                         // Delete old image if it exists and is not the default
-                        if (!empty($product['image']) && $product['image'] !== 'default.jpg' && file_exists("../../uploads/" . $product['image'])) {
-                            @unlink("../../uploads/" . $product['image']);
+                        if (!empty($product['image']) && $product['image'] !== 'default.jpg' && file_exists($upload_dir . $product['image'])) {
+                            @unlink($upload_dir . $product['image']);
                         }
                     } else {
                         throw new Exception("Failed to move uploaded file");
@@ -256,8 +262,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             error_log("Update failed: " . $msg);
             
             // Clean up uploaded file if something went wrong
-            if (isset($imageName) && $imageName !== $product['image'] && file_exists("../../uploads/" . $imageName)) {
-                @unlink("../../uploads/" . $imageName);
+            if (isset($imageName) && $imageName !== $product['image'] && file_exists($upload_dir . $imageName)) {
+                @unlink($upload_dir . $imageName);
             }
         }
 

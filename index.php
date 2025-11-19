@@ -660,7 +660,7 @@ $featured_query = $conn->query("SELECT * FROM products WHERE stock > 0 ORDER BY 
 
         <div class="featured-grid">
             <?php while($product = $featured_query->fetch_assoc()): ?>
-            <div class="featured-card" onclick="window.location.href='public/product_view.php?id=<?= $product['id'] ?>'">
+            <div class="featured-card" onclick="window.location.href='/IMprojFinal/public/product_view.php?id=<?= $product['id'] ?>'">
                 <div class="featured-image">
                     <img src="<?= BASE_URL ?>/uploads/<?= htmlspecialchars($product['image']) ?>" 
                          alt="<?= htmlspecialchars($product['name']) ?>">

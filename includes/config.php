@@ -1,9 +1,30 @@
 <?php
 // includes/config.php
 
-// Start session globally
+// Start session with configuration if not already started
 if (session_status() === PHP_SESSION_NONE) {
+    // Configure session settings before starting the session
+    ini_set('session.cookie_lifetime', 86400); // 24 minutes
+    ini_set('session.gc_maxlifetime', 86400);
+    
+    // Set session cookie parameters
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'domain' => '',
+        'secure' => isset($_SERVER['HTTPS']),
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+    
+    // Start the session
     session_start();
+}
+
+// Regenerate session ID to prevent session fixation
+if (!isset($_SESSION['last_regeneration'])) {
+    session_regenerate_id(true);
+    $_SESSION['last_regeneration'] = time();
 }
 
 // Database configuration
