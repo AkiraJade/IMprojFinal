@@ -11,7 +11,7 @@ $featured_query = $conn->query("SELECT * FROM products WHERE stock > 0 ORDER BY 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UrbanThrift - Sustainable Fashion Marketplace</title>
-    <link rel="stylesheet" href="/IMprojFinal/public/css/style.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/css/style.css">
     <style>
         /* Hero Section */
         .hero-section {
@@ -686,7 +686,7 @@ $featured_query = $conn->query("SELECT * FROM products WHERE stock > 0 ORDER BY 
     </div>
 </section>
 
-<?php include '../includes/footer.php'; ?>
+<?php include './includes/footer.php'; ?>
 
 </body>
 </html>

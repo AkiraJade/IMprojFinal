@@ -20,7 +20,7 @@ if ($conn->connect_error) {
 }
 
 // Define base paths for consistent navigation
-define('BASE_URL', '/IMprojFinal/public');
+define('BASE_URL', '/projectIManagement/public');
 define('ADMIN_URL', BASE_URL . '/admin');
 
 // Function: Check Login Redirect
