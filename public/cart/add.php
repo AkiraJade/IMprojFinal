@@ -6,27 +6,43 @@ require_once __DIR__ . '/../../includes/config.php';
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Set content type to JSON
-header('Content-Type: application/json');
+// Check if this is an AJAX request
+$isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+          strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
-// Function to send JSON response
-function sendResponse($success, $message = '', $data = []) {
-    echo json_encode([
-        'success' => $success,
-        'message' => $message,
-        'data' => $data
-    ]);
-    exit();
+// Function to handle the response
+function handleResponse($success, $message = '', $data = [], $isAjax = true) {
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => $success,
+            'message' => $message,
+            'data' => $data
+        ]);
+        exit();
+    } else {
+        // For non-AJAX requests, use session flash message and redirect
+        $_SESSION['flash_message'] = $message;
+        $_SESSION['flash_type'] = $success ? 'success' : 'error';
+        
+        // Redirect to return_url or cart page
+        $redirect = $data['redirect'] ?? BASE_URL . '/cart/cart.php';
+        header('Location: ' . $redirect);
+        exit();
+    }
 }
 
 // Check if user is logged in as customer
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'customer') {
-    sendResponse(false, 'Please login to add items to cart', ['redirect' => BASE_URL . '/login.php']);
+    handleResponse(false, 'Please login to add items to cart', 
+        ['redirect' => BASE_URL . '/login.php'], 
+        $isAjax
+    );
 }
 
 // Check if product ID is provided and valid
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
-    sendResponse(false, 'Invalid product');
+    handleResponse(false, 'Invalid product', [], $isAjax);
 }
 
 $product_id = intval($_GET['id']);
@@ -94,10 +110,10 @@ try {
         }
     }
     
-    sendResponse(true, $responseData['message'], $responseData);
+    handleResponse(true, $responseData['message'], $responseData, $isAjax);
     
 } catch (Exception $e) {
     $conn->rollback();
-    sendResponse(false, $e->getMessage());
+    handleResponse(false, $e->getMessage(), [], $isAjax);
 }
 ?>

@@ -1,5 +1,13 @@
 <?php
+// Enable error reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 require_once __DIR__ . '/../includes/config.php';
+
+// Log session and POST data for debugging
+error_log('Session data: ' . print_r($_SESSION, true));
+error_log('POST data: ' . print_r($_POST, true));
 
 // Get product ID
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
@@ -24,40 +32,102 @@ if (!$product) {
 $message = "";
 $message_type = "";
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit_review'])) {
+// Check if product_reviews table exists
+$table_check = $conn->query("SHOW TABLES LIKE 'product_reviews'");
+if ($table_check->num_rows === 0) {
+    error_log("ERROR: product_reviews table does not exist!");
+    $message = "❌ Error: Database table for reviews is missing. Please contact support.";
+    $message_type = "error";
+}
+
+// Debug: Log script start
+error_log("\n=== NEW REQUEST ===");
+error_log("REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
+error_log("GET data: " . print_r($_GET, true));
+error_log("POST data: " . print_r($_POST, true));
+error_log("SESSION data: " . print_r($_SESSION, true));
+
+// Handle form submission
+// Debug: Log form submission
+error_log("Form submitted with data: " . print_r($_POST, true));
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && (isset($_POST['submit_review']) || isset($_POST['rating']))) {
+    error_log("\n=== PROCESSING COMMENT SUBMISSION ===");
+    
     if (!isset($_SESSION['user_id'])) {
+        error_log("ERROR: User not logged in");
         $message = "❌ Please login to leave a comment!";
         $message_type = "error";
     } else {
-        $comment = trim($_POST['comment']);
-        $rating = intval($_POST['rating']);
+        $comment = trim($_POST['comment'] ?? '');
+        $rating = intval($_POST['rating'] ?? 0);
         $user_id = $_SESSION['user_id'];
+        $product_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
         
-        // Profanity filter - mask bad words
-        $bad_words = ['fuck', 'shit', 'damn', 'bitch', 'ass', 'hell', 'crap', 'bastard', 'puta', 'gago', 'tanga', 'bobo'];
-        foreach ($bad_words as $word) {
-            $pattern = '/\b' . preg_quote($word, '/') . '\b/i';
-            $replacement = str_repeat('*', strlen($word));
-            $comment = preg_replace($pattern, $replacement, $comment);
-        }
+        error_log("Processing comment - User ID: $user_id, Product ID: $product_id, Rating: $rating, Comment: '$comment'");
         
-        if (empty($comment)) {
-            $message = "❌ Comment cannot be empty!";
+        // Basic validation
+        if (empty($comment) || $rating < 1 || $rating > 5 || $product_id < 1) {
+            $error_msg = "Validation failed - ";
+            $error_msg .= empty($comment) ? 'Comment is empty, ' : '';
+            $error_msg .= ($rating < 1 || $rating > 5) ? 'Rating is invalid, ' : '';
+            $error_msg .= ($product_id < 1) ? 'Product ID is invalid' : '';
+            error_log($error_msg);
+            
+            $message = "❌ Please provide a valid comment and rating!";
             $message_type = "error";
         } else {
-            $stmt = $conn->prepare("INSERT INTO product_reviews (product_id, user_id, comment, rating) VALUES (?, ?, ?, ?)");
-            $stmt->bind_param("iisi", $product_id, $user_id, $comment, $rating);
+        
+            // Check for profanity
+            require_once __DIR__ . '/../includes/ProfanityFilter.php';
             
-            if ($stmt->execute()) {
-                $message = "✅ Comment posted successfully!";
-                $message_type = "success";
-            } else {
-                $message = "❌ Failed to post comment!";
+            if (ProfanityFilter::hasProfanity($comment)) {
+                $message = "❌ Your comment contains inappropriate language. Please revise your comment.";
                 $message_type = "error";
-            }
-        }
-    }
-}
+                // Log the attempt
+                error_log("Profanity detected in comment by user ID: $user_id");
+                // Show the form again with the original comment (not filtered)
+                $_POST['comment'] = $comment;
+            } else {
+                // Only proceed with saving if there's no profanity
+                $comment = ProfanityFilter::filter($comment);
+                
+                error_log("After profanity filter - Comment: '$comment'");
+                // Database operations
+                $sql = "INSERT INTO product_reviews (product_id, user_id, comment, rating) VALUES (?, ?, ?, ?)";
+                error_log("Preparing SQL: $sql");
+                
+                if ($stmt = $conn->prepare($sql)) {
+                    $stmt->bind_param("iisi", $product_id, $user_id, $comment, $rating);
+                    error_log("Bound parameters - Product ID: $product_id, User ID: $user_id, Rating: $rating");
+                    
+                    if ($stmt->execute()) {
+                        $insert_id = $stmt->insert_id;
+                        error_log("Comment inserted successfully. Insert ID: $insert_id");
+                        
+                        // Clear form and redirect to prevent resubmission
+                        $_POST = array();
+                        $redirect_url = $_SERVER['REQUEST_URI'];
+                        error_log("Redirecting to: $redirect_url");
+                        header("Location: $redirect_url");
+                        exit();
+                    } else {
+                        $error = $stmt->error;
+                        error_log("Database error: " . $error);
+                        $message = "❌ Error saving comment. Please try again. (Error: " . $error . ")";
+                        $message_type = "error";
+                    }
+                    $stmt->close();
+                } else {
+                    $error = $conn->error;
+                    error_log("Error preparing statement: " . $error);
+                    $message = "❌ Error: " . $error;
+                    $message_type = "error";
+                }
+            } // Close else block for profanity check
+        } // Close else block for validation
+    } // Close else block for user not logged in
+} // Close if isset(submit_review) and POST request
 
 // Handle comment update
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_review'])) {
@@ -293,7 +363,19 @@ include '../includes/header.php';
                     <input type="hidden" name="return_url" value="<?= urlencode((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']) ?>">
                     <div class="form-group" style="margin-bottom: 1rem;">
                         <label for="quantity" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">Quantity:</label>
-                        <input type="number" id="quantity" name="quantity" value="1" min="1" max="<?= $product['stock'] ?>" class="quantity-input" style="width: 100px; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--dark-light); color: var(--text-primary);">
+                        <input type="number" 
+                               id="quantity" 
+                               name="quantity" 
+                               value="1" 
+                               min="1" 
+                               max="<?= $product['stock'] ?>" 
+                               class="form-input quantity-input" 
+                               style="width: 100px; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--dark-light); color: var(--text-primary);"
+                               data-required="true"
+                               data-min="1"
+                               data-max="<?= $product['stock'] ?>"
+                               data-pattern-message="Please enter a valid quantity between 1 and <?= $product['stock'] ?>">
+                        <div id="quantity-error" style="color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; display: none;">Please enter a valid quantity (1-<?= $product['stock'] ?>)</div>
                     </div>
                     <button type="submit" class="btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
                         <span>🛒</span> Add to Cart
@@ -368,20 +450,49 @@ include '../includes/header.php';
         <?php if (isset($_SESSION['user_id'])): ?>
             <div class="review-form">
                 <h3>Leave a Comment</h3>
-                <form method="POST">
-                    <label>Rating:</label>
-                    <select name="rating" required style="width: 100%; padding: 0.5rem; margin-bottom: 1rem;">
-                        <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
-                        <option value="4">⭐⭐⭐⭐ Good</option>
-                        <option value="3">⭐⭐⭐ Average</option>
-                        <option value="2">⭐⭐ Poor</option>
-                        <option value="1">⭐ Terrible</option>
-                    </select>
+                <style>
+                .form-input.error {
+                    border-color: #ef4444 !important;
+                }
+                .error-message {
+                    color: #ef4444;
+                    font-size: 0.875rem;
+                    margin-top: 0.25rem;
+                    margin-bottom: 0.5rem;
+                }
+                </style>
+                <form method="POST" action="" id="reviewForm" class="needs-validation" novalidate onsubmit="return validateReviewForm(this);">
+                    <div class="form-group">
+                        <label for="rating">Rating:</label>
+                        <select name="rating" 
+                                id="rating" 
+                                class="form-input" 
+                                style="width: 100%; padding: 0.5rem; margin-bottom: 1rem;"
+                                required
+                                data-pattern-message="Please select a rating">
+                            <option value="">Select a rating</option>
+                            <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+                            <option value="4">⭐⭐⭐⭐ Good</option>
+                            <option value="3">⭐⭐⭐ Average</option>
+                            <option value="2">⭐⭐ Poor</option>
+                            <option value="1">⭐ Terrible</option>
+                        </select>
+                    </div>
 
-                    <label>Your Comment:</label>
-                    <textarea name="comment" rows="4" required placeholder="Share your thoughts about this product..." style="width: 100%; padding: 1rem; margin-bottom: 1rem; border-radius: var(--radius-md);"></textarea>
+                    <div class="form-group">
+                        <label for="comment">Your Comment:</label>
+                        <textarea name="comment" 
+                                id="comment" 
+                                rows="4" 
+                                class="form-input" 
+                                placeholder="Share your thoughts about this product..." 
+                                style="width: 100%; padding: 1rem; margin-bottom: 1rem; border-radius: var(--radius-md);"
+                                required
+                                data-pattern-message="Please enter a comment">
+                        </textarea>
+                    </div>
 
-                    <button type="submit" name="submit_review" class="btn-primary">Post Comment</button>
+                    <button type="submit" name="submit_review" value="1" class="btn-primary">Post Comment</button>
                 </form>
             </div>
         <?php else: ?>
@@ -450,6 +561,201 @@ include '../includes/header.php';
 </div>
 
 <script>
+// Prevent form submission if quantity is invalid
+function validateQuantity() {
+    const quantityInput = document.getElementById('quantity');
+    const quantity = parseInt(quantityInput.value);
+    const maxStock = parseInt(quantityInput.max);
+    const errorElement = document.getElementById('quantity-error');
+    
+    if (isNaN(quantity) || quantity < 1 || quantity > maxStock) {
+        errorElement.style.display = 'block';
+        quantityInput.style.borderColor = '#ef4444';
+        return false;
+    }
+    
+    errorElement.style.display = 'none';
+    quantityInput.style.borderColor = 'var(--border-color)';
+    return true;
+}
+
+// Add event listeners for quantity validation
+document.addEventListener('DOMContentLoaded', function() {
+    const quantityInput = document.getElementById('quantity');
+    if (quantityInput) {
+        quantityInput.addEventListener('change', validateQuantity);
+        quantityInput.addEventListener('input', validateQuantity);
+        
+        // Also validate on form submission
+        const form = quantityInput.closest('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (!validateQuantity()) {
+                    e.preventDefault();
+                    return false;
+                }
+                return true;
+            });
+        }
+    }
+});
+
+// List of bad words for client-side validation (keep in sync with server-side)
+const profanityWords = [
+    // English profanity
+    'fuck', 'shit', 'asshole', 'bitch', 'cunt', 'dick', 'pussy', 'cock', 'whore', 'slut',
+    'bastard', 'dickhead', 'piss', 'crap', 'damn', 'fag', 'faggot', 'retard', 'nigger',
+    'nigga', 'chink', 'spic', 'kike', 'coon', 'twat', 'wanker', 'bollocks', 'arsehole',
+    'bloody', 'bugger', 'cow', 'crikey', 'cunt', 'minge', 'prick', 'pissed', 'pissed off',
+    'piss off', 'shitty', 'shite', 'twat', 'wank', 'wanker', 'whore',
+    
+    // Filipino/Tagalog profanity
+    'puta', 'putang ina', 'putangina', 'puta ina', 'gago', 'gaga', 'bobo', 'tanga', 'ulol',
+    'bobo', 'bubu', 'bubuwit', 'burat', 'puking ina', 'pukina', 'pota', 'potang ina',
+    'potangina', 'tanga', 'tarantado', 'ulol', 'unggoy', 'yawa', 'yawwa', 'leche', 'lintik',
+    'pakshet', 'pakyu', 'peste', 'pukinang ina', 'puta ka', 'putang ina mo', 'shet', 'sira ulo',
+    'suso mo', 'tamod', 'tanga', 'tanga ka', 'tarantado', 'timang', 'tite', 'tungaw', 'ugok',
+    'ulol', 'ungas', 'ungas', 'ungas ka', 'yawa', 'yawa ka'
+];
+
+/**
+ * Check if text contains profanity
+ */
+function hasProfanity(text) {
+    if (!text) return false;
+    
+    const lowerText = text.toLowerCase();
+    return profanityWords.some(word => {
+        const regex = new RegExp('\\b' + word + '\\b', 'i');
+        return regex.test(lowerText);
+    });
+}
+
+// Debug form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('reviewForm');
+    if (form) {
+        console.log('Review form found');
+        
+        // Debug form submission
+        form.addEventListener('submit', function(e) {
+            console.log('Form submit event triggered');
+            console.log('Form data:', {
+                rating: document.getElementById('rating')?.value,
+                comment: document.getElementById('comment')?.value
+            });
+            
+            // Let the form submit normally
+            return true;
+        });
+    } else {
+        console.log('Review form not found!');
+    }
+});
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('reviewForm');
+    if (form) {
+        console.log('Review form found');
+        
+        // Debug form submission
+        form.addEventListener('submit', function(e) {
+            console.log('Form submit event triggered');
+            console.log('Form data:', {
+                rating: document.getElementById('rating')?.value,
+                comment: document.getElementById('comment')?.value
+            });
+            
+            // Let the form submit normally
+            return true;
+        });
+    } else {
+        console.log('Review form not found!');
+    }
+});
+
+// Initialize form validation with custom submit handler
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('reviewForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Manually validate required fields
+            const rating = document.getElementById('rating');
+            const comment = document.getElementById('comment');
+            let isValid = true;
+
+            // Clear previous errors
+            document.querySelectorAll('.error-message').forEach(el => el.remove());
+            document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
+
+            // Validate rating
+            if (!rating.value) {
+                showError(rating, 'Please select a rating');
+                isValid = false;
+            }
+
+            // Validate comment
+            if (!comment.value.trim()) {
+                showError(comment, 'Please enter a comment');
+                isValid = false;
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // If all valid, the form will submit normally
+            return true;
+        });
+        
+        // Add input event listeners to clear error when user starts typing/selecting
+        const rating = document.getElementById('rating');
+        const comment = document.getElementById('comment');
+        
+        if (rating) {
+            rating.addEventListener('change', function() {
+                if (this.value) {
+                    this.classList.remove('error');
+                    const errorMsg = this.parentNode.querySelector('.error-message');
+                    if (errorMsg) errorMsg.remove();
+                }
+            });
+        }
+        
+        if (comment) {
+            comment.addEventListener('input', function() {
+                if (this.value.trim()) {
+                    this.classList.remove('error');
+                    const errorMsg = this.parentNode.querySelector('.error-message');
+                    if (errorMsg) errorMsg.remove();
+                }
+            });
+        }
+    }
+});
+
+function showError(field, message) {
+    // Remove any existing error message
+    const existingError = field.parentNode.querySelector('.error-message');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Add error class to field
+    field.classList.add('error');
+    
+    // Create and append error message
+    const errorElement = document.createElement('div');
+    errorElement.className = 'error-message';
+    errorElement.style.color = '#ef4444';
+    errorElement.style.fontSize = '0.875rem';
+    errorElement.style.marginTop = '0.25rem';
+    errorElement.style.marginBottom = '0.5rem';
+    errorElement.textContent = message;
+    
+    field.parentNode.insertBefore(errorElement, field.nextSibling);
+}
+
 function toggleEdit(reviewId) {
     const commentDiv = document.getElementById('comment-' + reviewId);
     const editForm = document.getElementById('edit-form-' + reviewId);

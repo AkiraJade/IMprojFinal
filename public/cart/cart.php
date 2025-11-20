@@ -393,15 +393,16 @@ if (isset($_SESSION['error'])) {
                 <span>Shipping</span>
                 <span>₱0.00</span>
             </div>
-            <div class="summary-row total">
-                <span>Total</span>
-                <span>₱<?= number_format($grandTotal, 2) ?></span>
-            </div>
 
-            <form method="POST" action="checkout.php">
+            <form method="POST" action="checkout.php" id="checkoutForm" class="needs-validation" novalidate>
                 <div class="payment-method">
                     <label for="payment_method">Payment Method</label>
-                    <select name="payment_method" id="payment_method" required>
+                    <select name="payment_method" 
+                            id="payment_method" 
+                            class="form-input"
+                            data-required="true"
+                            data-pattern-message="Please select a payment method">
+                        <option value="">Select a payment method</option>
                         <option value="Cash">💵 Cash</option>
                         <option value="GCash">📱 GCash</option>
                         <option value="Credit Card">💳 Credit Card</option>
@@ -410,38 +411,161 @@ if (isset($_SESSION['error'])) {
                     </select>
                 </div>
 
-                <button type="submit" class="btn-checkout">
-                    Proceed to Checkout ✅
-                </button>
-            </form>
+                <!-- Additional Fields for GCash -->
+                <div id="gcashFields" class="additional-fields" style="display: none; margin-top: 1rem;">
+                    <div class="form-group">
+                        <label for="gcash_number">GCash Number</label>
+                        <input type="tel" 
+                               id="gcash_number" 
+                               name="gcash_number" 
+                               class="form-input" 
+                               placeholder="09XX XXX XXXX"
+                               data-pattern="^[0-9]{11}$"
+                               data-pattern-message="Please enter a valid 11-digit GCash number"
+                               data-required="false">
+                    </div>
+                </div>
 
-            <a href="../shop.php" class="btn-continue">Continue Shopping</a>
+                <!-- Additional Fields for Credit/Debit Card -->
+                <div id="cardFields" class="additional-fields" style="display: none; margin-top: 1rem;">
+                    <div class="form-group">
+                        <label for="card_number">Card Number</label>
+                        <input type="text" 
+                               id="card_number" 
+                               name="card_number" 
+                               class="form-input" 
+                               placeholder="1234 5678 9012 3456"
+                               data-pattern="^[0-9\s]{13,19}$"
+                               data-pattern-message="Please enter a valid card number"
+                               data-required="false">
+                    </div>
+                    <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem;">
+                        <div class="form-group">
+                            <label for="expiry_date">Expiry Date</label>
+                            <input type="text" 
+                                   id="expiry_date" 
+                                   name="expiry_date" 
+                                   class="form-input" 
+                                   placeholder="MM/YY"
+                                   data-pattern="^(0[1-9]|1[0-2])\/([0-9]{2})$"
+                                   data-pattern-message="Please enter a valid expiry date (MM/YY)"
+                                   data-required="false">
+                        </div>
+                        <div class="form-group">
+                            <label for="cvv">CVV</label>
+                            <input type="text" 
+                                   id="cvv" 
+                                   name="cvv" 
+                                   class="form-input" 
+                                   placeholder="123"
+                                   data-pattern="^[0-9]{3,4}$"
+                                   data-pattern-message="Please enter a valid CVV"
+                                   data-required="false">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group" style="margin-top: 2rem;">
+                    <button type="submit" class="btn-checkout" name="proceed_to_checkout">
+                        Proceed to Checkout
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
-
     <?php else: ?>
-    
-    <div class="empty-cart">
-        <div class="empty-cart-icon">🛒</div>
-        <h3>Your cart is empty</h3>
-        <p>Looks like you haven't added any items to your cart yet.</p>
-        <a href="../shop.php" class="btn-primary" style="display: inline-block; padding: 1rem 2rem; text-decoration: none;">
-            Start Shopping
-        </a>
-    </div>
-
+        <div class="empty-cart">
+            <div class="empty-cart-icon">🛒</div>
+            <h3>Your cart is empty</h3>
+            <p>Looks like you haven't added any items to your cart yet.</p>
+            <a href="../shop.php" class="btn-primary" style="display: inline-block; padding: 1rem 2rem; text-decoration: none;">
+                Start Shopping
+            </a>
+        </div>
     <?php endif; ?>
 </div>
 
-<script>
-function confirmDelete(id) {
-    if (confirm("Remove this item from your cart?")) {
-        window.location.href = "remove.php?id=" + id;
+    <script src="<?= BASE_URL ?>/public/js/form-validation.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle additional fields based on payment method
+        const paymentMethod = document.getElementById('payment_method');
+        const gcashFields = document.getElementById('gcashFields');
+        const cardFields = document.getElementById('cardFields');
+        
+        if (paymentMethod) {
+            paymentMethod.addEventListener('change', function() {
+                // Hide all additional fields first
+                gcashFields.style.display = 'none';
+                cardFields.style.display = 'none';
+                
+                // Show relevant fields based on selection
+                if (this.value === 'GCash') {
+                    gcashFields.style.display = 'block';
+                    // Make GCash number required when GCash is selected
+                    document.getElementById('gcash_number').setAttribute('data-required', 'true');
+                    // Make card fields not required
+                    document.getElementById('card_number').removeAttribute('data-required');
+                    document.getElementById('expiry_date').removeAttribute('data-required');
+                    document.getElementById('cvv').removeAttribute('data-required');
+                } else if (['Credit Card', 'Debit Card'].includes(this.value)) {
+                    cardFields.style.display = 'block';
+                    // Make card fields required when card is selected
+                    document.getElementById('card_number').setAttribute('data-required', 'true');
+                    document.getElementById('expiry_date').setAttribute('data-required', 'true');
+                    document.getElementById('cvv').setAttribute('data-required', 'true');
+                    // Make GCash number not required
+                    document.getElementById('gcash_number').removeAttribute('data-required');
+                } else {
+                    // For other payment methods, ensure no additional fields are required
+                    document.getElementById('gcash_number').removeAttribute('data-required');
+                    document.getElementById('card_number').removeAttribute('data-required');
+                    document.getElementById('expiry_date').removeAttribute('data-required');
+                    document.getElementById('cvv').removeAttribute('data-required');
+                }
+            });
+        }
+
+        // Format card number
+        const cardNumber = document.getElementById('card_number');
+        if (cardNumber) {
+            cardNumber.addEventListener('input', function(e) {
+                // Remove all non-digits
+                let value = this.value.replace(/\D/g, '');
+                // Add space after every 4 digits
+                value = value.replace(/(\d{4})(?=\d)/g, '$1 ');
+                this.value = value.trim();
+            });
+        }
+
+        // Format expiry date
+        const expiryDate = document.getElementById('expiry_date');
+        if (expiryDate) {
+            expiryDate.addEventListener('input', function(e) {
+                let value = this.value.replace(/\D/g, '');
+                if (value.length > 2) {
+                    value = value.substring(0, 2) + '/' + value.substring(2, 4);
+                }
+                this.value = value;
+            });
+        }
+
+        // Format CVV to only allow numbers and max 4 digits
+        const cvv = document.getElementById('cvv');
+        if (cvv) {
+            cvv.addEventListener('input', function(e) {
+                this.value = this.value.replace(/\D/g, '').substring(0, 4);
+            });
+        }
+    });
+
+    function confirmDelete(id) {
+        if (confirm("Remove this item from your cart?")) {
+            window.location.href = "remove.php?id=" + id;
+        }
     }
-}
-</script>
+    </script>
 
-<?php include '../../includes/footer.php'; ?>
-
+    <?php include '../../includes/footer.php'; ?>
 </body>
 </html>

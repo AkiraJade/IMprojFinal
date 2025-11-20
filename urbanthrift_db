@@ -234,3 +234,4 @@ WHERE role = 'admin';
 
 SELECT id, email, password, role FROM users WHERE email = 'admin@urbanthrift.com';
 ALTER TABLE users MODIFY password VARCHAR(255);
+

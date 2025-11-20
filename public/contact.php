@@ -1,6 +1,63 @@
 <?php 
 require_once __DIR__ . '/../includes/config.php';
 include '../includes/header.php';
+
+$message = '';
+$message_type = '';
+
+// Process form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Get form data
+    $name = trim($_POST['name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $subject = trim($_POST['subject'] ?? '');
+    $message_content = trim($_POST['message'] ?? '');
+    
+    // Basic validation
+    $errors = [];
+    
+    if (empty($name)) {
+        $errors[] = 'Name is required';
+    }
+    
+    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'Valid email is required';
+    }
+    
+    if (empty($subject)) {
+        $errors[] = 'Subject is required';
+    }
+    
+    if (empty($message_content)) {
+        $errors[] = 'Message is required';
+    }
+    
+    // If no validation errors, save to database
+    if (empty($errors)) {
+        try {
+            $stmt = $conn->prepare("INSERT INTO contact_messages (name, email, phone, subject, message) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param("sssss", $name, $email, $phone, $subject, $message_content);
+            
+            if ($stmt->execute()) {
+                $message = 'Thank you for your message! We will get back to you soon.';
+                $message_type = 'success';
+                
+                // Clear form
+                $_POST = [];
+            } else {
+                throw new Exception('Failed to save your message. Please try again.');
+            }
+        } catch (Exception $e) {
+            $message = 'Error: ' . $e->getMessage();
+            $message_type = 'error';
+            error_log('Contact form error: ' . $e->getMessage());
+        }
+    } else {
+        $message = implode('<br>', $errors);
+        $message_type = 'error';
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -273,30 +330,74 @@ include '../includes/header.php';
         <!-- Contact Form -->
         <div class="contact-form">
             <h2>Send us a Message</h2>
-            <form action="#" method="POST">
+            <?php if ($message): ?>
+                <div class="alert alert-<?= $message_type ?>" style="margin-bottom: 2rem; padding: 1rem; border-radius: var(--radius-md); background: <?= $message_type === 'success' ? '#10b981' : '#ef4444' ?>; color: white;">
+                    <?= $message ?>
+                </div>
+            <?php endif; ?>
+            <form action="" method="POST" id="contactForm" novalidate>
                 <div class="form-group">
                     <label for="name">Your Name</label>
-                    <input type="text" id="name" name="name" required placeholder="Enter your full name">
+                    <input type="text" 
+                           id="name" 
+                           name="name" 
+                           class="form-input"
+                           placeholder="Enter your full name"
+                           value="<?= htmlspecialchars($_POST['name'] ?? '') ?>"
+                           required
+                           minlength="2"
+                           maxlength="100"
+                           pattern="^[a-zA-Z\s]+"
+                           data-pattern-message="Please enter a valid name (letters and spaces only)">
                 </div>
 
                 <div class="form-group">
                     <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" required placeholder="your.email@example.com">
+                    <input type="email" 
+                           id="email" 
+                           name="email" 
+                           class="form-input"
+                           placeholder="your.email@example.com"
+                           value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
+                           required
+                           pattern="[^@\s]+@[^@\s]+\.[^@\s]+"
+                           data-pattern-message="Please enter a valid email address">
                 </div>
 
                 <div class="form-group">
-                    <label for="phone">Phone Number</label>
-                    <input type="tel" id="phone" name="phone" placeholder="+63 XXX XXX XXXX">
+                    <label for="phone">Phone Number (Optional)</label>
+                    <input type="tel" 
+                           id="phone" 
+                           name="phone" 
+                           class="form-input"
+                           placeholder="+63 XXX XXX XXXX"
+                           value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>"
+                           pattern="^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$"
+                           data-pattern-message="Please enter a valid phone number">
                 </div>
 
                 <div class="form-group">
                     <label for="subject">Subject</label>
-                    <input type="text" id="subject" name="subject" required placeholder="What is this about?">
+                    <input type="text" 
+                           id="subject" 
+                           name="subject" 
+                           class="form-input"
+                           placeholder="What is this about?"
+                           value="<?= htmlspecialchars($_POST['subject'] ?? '') ?>"
+                           required
+                           minlength="5"
+                           maxlength="100">
                 </div>
 
                 <div class="form-group">
                     <label for="message">Message</label>
-                    <textarea id="message" name="message" required placeholder="Write your message here..."></textarea>
+                    <textarea id="message" 
+                              name="message" 
+                              class="form-input"
+                              placeholder="Write your message here..."
+                              required
+                              minlength="10"
+                              maxlength="1000"><?= htmlspecialchars($_POST['message'] ?? '') ?></textarea>
                 </div>
 
                 <button type="submit" class="btn-submit">Send Message 📨</button>

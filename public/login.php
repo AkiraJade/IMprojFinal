@@ -557,28 +557,34 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </div>
                     <?php endif; ?>
 
-                    <form method="POST" id="loginForm">
+                    <form method="POST" id="loginForm" novalidate>
                         <div class="form-group">
-                            <label class="form-label">Email Address</label>
+                            <label class="form-label" for="login-email">Email Address</label>
                             <div class="input-wrapper">
                                 <input type="email" 
+                                       id="login-email"
                                        name="email" 
                                        class="form-input" 
-                                       placeholder="your.email@example.com" 
-                                       required
+                                       placeholder="your.email@example.com"
+                                       data-required="true"
+                                       data-pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
+                                       data-pattern-message="Please enter a valid email address"
                                        value="<?= isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '' ?>">
                                 <span class="input-icon">📧</span>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Password</label>
+                            <label class="form-label" for="login-password">Password</label>
                             <div class="input-wrapper">
                                 <input type="password" 
+                                       id="login-password"
                                        name="password" 
                                        class="form-input" 
-                                       placeholder="Enter your password" 
-                                       required>
+                                       placeholder="Enter your password"
+                                       data-required="true"
+                                       data-min-length="6"
+                                       data-pattern-message="Password must be at least 6 characters">
                                 <span class="input-icon">🔒</span>
                             </div>
                             <div class="forgot-password">

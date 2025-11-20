@@ -7,7 +7,7 @@ require_once __DIR__ . '/config.php';
 <head>
     <meta charset="UTF-8">
     <title>UrbanThrift</title>
-    <link rel="stylesheet" href="<?= BASE_URL ?>/css/style.css">
+    <link rel="stylesheet" href="/IMprojFinal/public/css/style.css">
 </head>
 <body>
 
