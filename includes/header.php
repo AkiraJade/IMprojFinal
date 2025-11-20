@@ -7,6 +7,7 @@ if (!isset($_SESSION)) { session_start(); }
     <meta charset="UTF-8">
     <title>UrbanThrift</title>
     <link rel="stylesheet" href="/IMprojFinal/public/css/style.css">
+    <link rel="stylesheet" href="/IMprojFinal/public/css/form-validation.css">
 </head>
 <body>
 

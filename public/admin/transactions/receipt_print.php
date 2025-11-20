@@ -1,10 +1,10 @@
 <?php
-// Include config and check admin access
+// Include config
 require_once __DIR__ . '/../../../includes/config.php';
-checkAdmin();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
-    header("Location: ../../login.php");
+// Check if user is logged in and has the right role
+if (!isset($_SESSION['user_id']) || ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'customer')) {
+    header("Location: " . (isset($_SESSION['role']) && $_SESSION['role'] === 'customer' ? '../../login.php' : '../../../login.php'));
     exit();
 }
 

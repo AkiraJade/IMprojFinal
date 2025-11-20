@@ -89,6 +89,37 @@ try {
     // Commit transaction
     $conn->commit();
     
+    // Send order confirmation email
+    require_once __DIR__ . '/../../includes/EmailService.php';
+    $emailService = new EmailService();
+    
+    // Get user details
+    $stmt = $conn->prepare("SELECT username, email FROM users WHERE id = ?");
+    $stmt->bind_param("i", $customer_id);
+    $stmt->execute();
+    $user_result = $stmt->get_result();
+    $user = $user_result->fetch_assoc();
+    
+    if ($user) {
+        // Prepare order data for email
+        $order_data = [
+            'id' => $order_id,
+            'order_number' => 'ORD' . str_pad($order_id, 6, '0', STR_PAD_LEFT),
+            'total_amount' => $total,
+            'created_at' => date('Y-m-d H:i:s'),
+            'items' => $cart_items,
+            'payment_method' => $payment_method,
+            'status' => 'pending' // Default status for new orders
+        ];
+        
+        // Send order confirmation email
+        $emailService->sendOrderConfirmation($order_data, [
+            'id' => $customer_id,
+            'name' => $user['username'],
+            'email' => $user['email']
+        ]);
+    }
+    
     echo "<script>alert('✅ Checkout successful! Order ID: {$order_id}'); window.location='../customer/orders.php';</script>";
     exit();
     

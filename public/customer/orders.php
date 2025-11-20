@@ -298,6 +298,9 @@ include '../../includes/header.php';
             text-decoration: none;
             font-weight: 600;
             transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
@@ -312,6 +315,76 @@ include '../../includes/header.php';
         .btn-view:hover {
             background: var(--primary);
             color: white;
+        }
+
+        .btn-print {
+            background-color: var(--primary-light);
+            color: white;
+        }
+        
+        .btn-cancel {
+            background-color: #ff4757;
+            color: white;
+        }
+        
+        .btn-cancel:hover {
+            background-color: #ff6b81;
+        }
+        
+        /* Cancel Order Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modal h3 {
+            margin-top: 0;
+            color: var(--text-primary);
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            resize: vertical;
+            min-height: 100px;
         }
 
         .btn-print {
@@ -461,6 +534,11 @@ include '../../includes/header.php';
                             <a href="../admin/transactions/receipt_print.php?id=<?= $order['id'] ?>" target="_blank" class="btn-action btn-print">
                                 🖨️ Print Receipt
                             </a>
+                            <?php if ($order['status'] === 'Pending'): ?>
+                                <button type="button" onclick="showCancelModal(<?= $order['id'] ?>)" class="btn-action btn-cancel">
+                                    ❌ Cancel Order
+                                </button>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -483,6 +561,62 @@ include '../../includes/header.php';
         </div>
     <?php endif; ?>
 </div>
+
+<!-- Cancel Order Modal -->
+<div id="cancelModal" class="modal">
+    <div class="modal-content">
+        <h3>Cancel Order</h3>
+        <p>Are you sure you want to cancel this order? This action cannot be undone.</p>
+        <form id="cancelOrderForm" method="POST" action="cancel_order.php">
+            <input type="hidden" name="order_id" id="cancelOrderId">
+            <div class="form-group">
+                <label for="reason">Reason for cancellation (optional):</label>
+                <textarea name="reason" id="reason" placeholder="Please let us know why you're canceling this order..."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" onclick="hideCancelModal()" class="btn-action btn-view">
+                    Go Back
+                </button>
+                <button type="submit" class="btn-action btn-cancel">
+                    Confirm Cancellation
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Show/hide cancel modal
+function showCancelModal(orderId) {
+    document.getElementById('cancelOrderId').value = orderId;
+    document.getElementById('cancelModal').style.display = 'flex';
+}
+
+function hideCancelModal() {
+    document.getElementById('cancelModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('cancelModal');
+    if (event.target === modal) {
+        hideCancelModal();
+    }
+}
+
+// Show success/error messages
+document.addEventListener('DOMContentLoaded', function() {
+    <?php if (isset($_SESSION['success'])): ?>
+        alert('<?php echo addslashes($_SESSION['success']); ?>');
+        <?php unset($_SESSION['success']); ?>
+    <?php endif; ?>
+    
+    <?php if (isset($_SESSION['error'])): ?>
+        alert('Error: <?php echo addslashes($_SESSION['error']); ?>');
+        <?php unset($_SESSION['error']); ?>
+    <?php endif; ?>
+});
+</script>
 
 <?php include '../../includes/footer.php'; ?>
 

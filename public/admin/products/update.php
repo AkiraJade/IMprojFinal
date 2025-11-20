@@ -135,16 +135,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $file_type = $_FILES["image"]["type"];
                 
                 if (in_array($file_type, $allowed_types)) {
+                    // Create uploads directory if it doesn't exist
+                    $upload_dir = __DIR__ . '/../../../public/uploads/';
+                    if (!file_exists($upload_dir)) {
+                        mkdir($upload_dir, 0777, true);
+                    }
+                    
                     // Generate unique filename
                     $file_extension = pathinfo($_FILES["image"]["name"], PATHINFO_EXTENSION);
                     $imageName = uniqid() . '.' . $file_extension;
-                    $target = "../../uploads/" . $imageName;
+                    $target = $upload_dir . $imageName;
                     
                     // Move uploaded file
                     if (move_uploaded_file($_FILES["image"]["tmp_name"], $target)) {
                         // Delete old image if it exists and is not the default
-                        if (!empty($product['image']) && $product['image'] !== 'default.jpg' && file_exists("../../uploads/" . $product['image'])) {
-                            @unlink("../../uploads/" . $product['image']);
+                        if (!empty($product['image']) && $product['image'] !== 'default.jpg' && file_exists($upload_dir . $product['image'])) {
+                            @unlink($upload_dir . $product['image']);
                         }
                     } else {
                         throw new Exception("Failed to move uploaded file");
@@ -256,8 +262,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             error_log("Update failed: " . $msg);
             
             // Clean up uploaded file if something went wrong
-            if (isset($imageName) && $imageName !== $product['image'] && file_exists("../../uploads/" . $imageName)) {
-                @unlink("../../uploads/" . $imageName);
+            if (isset($imageName) && $imageName !== $product['image'] && file_exists($upload_dir . $imageName)) {
+                @unlink($upload_dir . $imageName);
             }
         }
 
@@ -296,40 +302,131 @@ include '../../../includes/header.php';
             </div>
         <?php endif; ?>
         
-        <form class="form-box" method="POST" enctype="multipart/form-data" id="productForm" onsubmit="return validateForm()">
-    <input type="hidden" name="debug" value="1">
-            <label>Product Name</label>
-            <input type="text" name="name" value="<?= $product['name']; ?>" required>
-
-            <label>Brand</label>
-            <input type="text" name="brand" value="<?= $product['brand']; ?>">
-
-            <label>Category</label>
-            <input type="text" name="category" value="<?= $product['category']; ?>" required>
-
-            <label>Size</label>
-            <input type="text" name="size" value="<?= $product['size']; ?>" required>
-
-            <label>Price (₱)</label>
-            <input type="number" name="price" step="0.01" value="<?= $product['price']; ?>" required>
-
-            <label>Stock Quantity</label>
-            <input type="number" name="stock" value="<?= $product['stock']; ?>" required>
-
-            <label>Condition</label>
-            <select name="condition_type">
-                <option <?= $product['condition_type']=="Like New"?"selected":""; ?>>Like New</option>
-                <option <?= $product['condition_type']=="Good"?"selected":""; ?>>Good</option>
-                <option <?= $product['condition_type']=="Slightly Used"?"selected":""; ?>>Slightly Used</option>
-            </select>
-
-            <label>Product Image (Upload only if you want to replace)</label>
-            <img src="../../uploads/<?= $product['image']; ?>" height="80"><br><br>
-            <input type="file" name="image">
+        <form class="form-box" method="POST" enctype="multipart/form-data" id="productForm" novalidate>
+            <input type="hidden" name="debug" value="1">
+            
+            <div class="form-group">
+                <label for="name">Product Name</label>
+                <input type="text" 
+                       id="name" 
+                       name="name" 
+                       class="form-input"
+                       value="<?= htmlspecialchars($product['name']); ?>"
+                       data-required="true"
+                       data-min-length="3"
+                       data-max-length="100"
+                       data-pattern-message="Product name must be between 3-100 characters">
+            </div>
 
             <div class="form-group">
-                <label>Supplier</label>
-                <select name="supplier_id" class="form-control">
+                <label for="brand">Brand</label>
+                <input type="text" 
+                       id="brand" 
+                       name="brand" 
+                       class="form-input"
+                       value="<?= htmlspecialchars($product['brand']); ?>"
+                       data-required="true"
+                       data-min-length="2"
+                       data-max-length="50"
+                       data-pattern-message="Brand must be between 2-50 characters">
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category</label>
+                <input type="text" 
+                       id="category" 
+                       name="category" 
+                       class="form-input"
+                       value="<?= htmlspecialchars($product['category']); ?>"
+                       data-required="true"
+                       data-pattern="^[a-zA-Z\s&]+"
+                       data-pattern-message="Please enter a valid category name">
+            </div>
+
+            <div class="form-group">
+                <label for="size">Size</label>
+                <input type="text" 
+                       id="size" 
+                       name="size" 
+                       class="form-input"
+                       value="<?= htmlspecialchars($product['size']); ?>"
+                       data-required="true"
+                       data-pattern-message="Please specify the product size">
+            </div>
+
+            <div class="form-group">
+                <label for="price">Price (₱)</label>
+                <input type="number" 
+                       id="price" 
+                       name="price" 
+                       class="form-input"
+                       step="0.01" 
+                       min="0.01"
+                       value="<?= htmlspecialchars($product['price']); ?>"
+                       data-required="true"
+                       data-pattern="^\d+(\.\d{1,2})?$"
+                       data-pattern-message="Please enter a valid price">
+            </div>
+
+            <div class="form-group">
+                <label for="stock">Stock Quantity</label>
+                <input type="number" 
+                       id="stock" 
+                       name="stock" 
+                       class="form-input"
+                       min="0"
+                       value="<?= htmlspecialchars($product['stock']); ?>"
+                       data-required="true"
+                       data-pattern="^\d+$"
+                       data-pattern-message="Please enter a valid stock quantity">
+            </div>
+
+            <div class="form-group">
+                <label for="condition_type">Condition</label>
+                <select name="condition_type" 
+                        id="condition_type" 
+                        class="form-input"
+                        data-required="true">
+                    <option value="">-- Select Condition --</option>
+                    <option value="Like New" <?= $product['condition_type']=="Like New"?"selected":""; ?>>Like New</option>
+                    <option value="Good" <?= $product['condition_type']=="Good"?"selected":""; ?>>Good</option>
+                    <option value="Slightly Used" <?= $product['condition_type']=="Slightly Used"?"selected":""; ?>>Slightly Used</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="image">Product Image</label>
+                <?php if (!empty($product['image'])): ?>
+                    <div class="current-image">
+                        <p>Current Image:</p>
+                        <img src="../../uploads/<?= htmlspecialchars($product['image']); ?>" 
+                             alt="Current product image" 
+                             style="max-width: 200px; display: block; margin: 10px 0;">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="remove_image" id="remove_image">
+                            Remove current image
+                        </label>
+                    </div>
+                    <p style="margin: 15px 0 5px;">Upload new image (leave blank to keep current):</p>
+                <?php endif; ?>
+                <input type="file" 
+                       id="image" 
+                       name="image" 
+                       class="form-input"
+                       accept="image/jpeg,image/png,image/gif,image/webp"
+                       data-file-type="image/jpeg,image/png,image/gif,image/webp"
+                       data-max-size="2MB"
+                       data-pattern-message="Please upload a valid image (JPG, PNG, GIF, or WebP, max 2MB)">
+                <small class="text-muted">Leave blank to keep current image. Allowed formats: JPG, PNG, GIF, WebP. Max size: 2MB</small>
+                <div id="imagePreview" style="margin-top: 10px;"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="supplier_id">Supplier</label>
+                <select name="supplier_id" 
+                        id="supplier_id" 
+                        class="form-input"
+                        data-pattern-message="Please select a supplier">
                     <option value="">-- No Supplier --</option>
                     <?php foreach ($suppliers as $supplier): ?>
                         <option value="<?= $supplier['id'] ?>" <?= (isset($product['supplier_id']) && $product['supplier_id'] == $supplier['id']) ? 'selected' : '' ?>>
@@ -338,52 +435,172 @@ include '../../../includes/header.php';
                     <?php endforeach; ?>
                 </select>
                 <?php if (isset($product['supplier_name']) && $product['supplier_name']): ?>
-                    <small class="form-text text-muted">Current supplier: <?= htmlspecialchars($product['supplier_name']) ?></small>
+                    <small class="text-muted">Current supplier: <?= htmlspecialchars($product['supplier_name']) ?></small>
                 <?php endif; ?>
             </div>
 
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Update Product
-            </button>
-            <a href="read.php" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Back to List
-            </a>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">
+                    💾 Update Product
+                </button>
+                <a href="read.php" class="btn-secondary">
+                    ❌ Cancel
+                </a>
+            </div>
         </form>
     </main>
 </div>
 
 <script>
-function validateForm() {
-    console.log("Form validation started");
-    const requiredFields = ['name', 'category', 'price', 'stock'];
-    let isValid = true;
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize form validation
+    const form = document.getElementById('productForm');
+    const imageInput = document.getElementById('image');
+    const removeImageCheckbox = document.getElementById('remove_image');
     
-    requiredFields.forEach(field => {
-        const element = document.querySelector(`[name="${field}"]`);
-        if (element && !element.value.trim()) {
-            alert(`Please fill in the ${field.replace('_', ' ')} field`);
-            element.focus();
-            isValid = false;
-            return false;
-        }
+    // Toggle image removal
+    if (removeImageCheckbox) {
+        removeImageCheckbox.addEventListener('change', function() {
+            const imagePreview = document.querySelector('.current-image');
+            if (this.checked && imagePreview) {
+                imagePreview.style.opacity = '0.5';
+            } else if (imagePreview) {
+                imagePreview.style.opacity = '1';
+            }
+        });
+    }
+    
+    // Image preview functionality
+    if (imageInput) {
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('imagePreview');
+            
+            if (file) {
+                // Check file size (2MB max)
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('File size must be less than 2MB');
+                    this.value = '';
+                    return;
+                }
+                
+                // Check file type
+                const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                if (!validTypes.includes(file.type)) {
+                    alert('Please upload a valid image file (JPG, PNG, GIF, or WebP)');
+                    this.value = '';
+                    return;
+                }
+                
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    // Remove any existing preview
+                    while (preview.firstChild) {
+                        preview.removeChild(preview.firstChild);
+                    }
+                    
+                    // Create and append new preview
+                    const img = document.createElement('img');
+                    img.src = event.target.result;
+                    img.style.maxWidth = '200px';
+                    img.style.marginTop = '10px';
+                    img.style.borderRadius = '4px';
+                    img.style.border = '1px solid #ddd';
+                    preview.appendChild(img);
+                    
+                    // Hide the remove image checkbox if showing a new image
+                    if (removeImageCheckbox) {
+                        removeImageCheckbox.checked = false;
+                        const currentImage = document.querySelector('.current-image');
+                        if (currentImage) {
+                            currentImage.style.opacity = '1';
+                        }
+                    }
+                };
+                reader.readAsDataURL(file);
+            } else if (preview) {
+                // Clear preview if file input is cleared
+                while (preview.firstChild) {
+                    preview.removeChild(preview.firstChild);
+                }
+            }
+        });
+    }
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        // The form validation will be handled by form-validation.js
+        // This just ensures the form is properly initialized
     });
-    
-    const price = document.querySelector('[name="price"]');
-    if (price && parseFloat(price.value) <= 0) {
-        alert('Price must be greater than 0');
-        price.focus();
-        return false;
-    }
-    
-    const stock = document.querySelector('[name="stock"]');
-    if (stock && parseInt(stock.value) < 0) {
-        alert('Stock cannot be negative');
-        stock.focus();
-        return false;
-    }
-    
-    return isValid;
-}
+});
 </script>
+
+<style>
+/* Additional styles for the update form */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.checkbox-label input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.current-image {
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px dashed #ddd;
+    border-radius: 4px;
+    transition: opacity 0.3s ease;
+}
+
+.current-image p {
+    margin: 0 0 8px 0;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+}
+
+.btn-secondary {
+    background-color: #f0f0f0;
+    color: #333;
+    border: 1px solid #ddd;
+}
+
+.btn-secondary:hover {
+    background-color: #e0e0e0;
+}
+</style>
 
 <?php include '../../../includes/footer.php'; ?>

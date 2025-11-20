@@ -622,3 +622,125 @@
     [csrf_token] => e77fd3e8fe89e342181ef7ae03b6032dd85a5b04aefaba0bf86b6686f11809ff
 )
 
+[2025-11-19 13:19:04] Script started
+[2025-11-19 13:19:04] [update.php:22] Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [email] => admin@urbanthrift.com
+    [role] => admin
+)
+
+[2025-11-19 13:19:15] Script started
+[2025-11-19 13:19:15] [update.php:22] Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [email] => admin@urbanthrift.com
+    [role] => admin
+)
+
+[2025-11-19 13:19:15] [update.php:68] === FORM SUBMITTED ===
+[2025-11-19 13:19:15] [update.php:69] POST data: Array
+(
+    [debug] => 1
+    [name] => TestAgain
+    [brand] => Nice
+    [category] => T-shirt
+    [size] => 2
+    [price] => 100.00
+    [stock] => 2
+    [condition_type] => Like New
+    [supplier_id] => 1
+)
+
+[2025-11-19 13:19:15] [update.php:70] FILES data: Array
+(
+    [image] => Array
+        (
+            [name] => Huawei.png
+            [full_path] => Huawei.png
+            [type] => image/png
+            [tmp_name] => C:\xampp\tmp\phpBCB0.tmp
+            [error] => 0
+            [size] => 5869
+        )
+
+)
+
+[2025-11-19 13:19:15] [update.php:73] Current directory: C:\xampp\htdocs\IMprojFinal\public\admin\products
+[2025-11-19 13:19:15] [update.php:74] Upload directory exists: Yes
+[2025-11-19 13:19:15] [update.php:75] Upload directory writable: Yes
+[2025-11-19 13:19:15] [update.php:170] Preparing query: UPDATE products SET 
+                name = ?,
+                brand = ?,
+                category = ?,
+                size = ?,
+                price = ?,
+                stock = ?,
+                condition_type = ?,
+                image = ?,
+                supplier_id = ?
+                WHERE id = ?
+[2025-11-19 13:19:15] [update.php:246] ✅ Product updated successfully!
+[2025-11-19 13:20:46] Script started
+[2025-11-19 13:20:46] [update.php:22] Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [email] => admin@urbanthrift.com
+    [role] => admin
+)
+
+[2025-11-19 13:21:01] Script started
+[2025-11-19 13:21:01] [update.php:22] Session data: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [email] => admin@urbanthrift.com
+    [role] => admin
+)
+
+[2025-11-19 13:21:01] [update.php:68] === FORM SUBMITTED ===
+[2025-11-19 13:21:01] [update.php:69] POST data: Array
+(
+    [debug] => 1
+    [name] => TestAgain
+    [brand] => Nice
+    [category] => T-shirt
+    [size] => 2
+    [price] => 100.00
+    [stock] => 2
+    [condition_type] => Like New
+    [supplier_id] => 1
+)
+
+[2025-11-19 13:21:01] [update.php:70] FILES data: Array
+(
+    [image] => Array
+        (
+            [name] => Xiaomi.png
+            [full_path] => Xiaomi.png
+            [type] => image/png
+            [tmp_name] => C:\xampp\tmp\php5A54.tmp
+            [error] => 0
+            [size] => 2839
+        )
+
+)
+
+[2025-11-19 13:21:01] [update.php:73] Current directory: C:\xampp\htdocs\IMprojFinal\public\admin\products
+[2025-11-19 13:21:01] [update.php:74] Upload directory exists: Yes
+[2025-11-19 13:21:01] [update.php:75] Upload directory writable: Yes
+[2025-11-19 13:21:01] [update.php:176] Preparing query: UPDATE products SET 
+                name = ?,
+                brand = ?,
+                category = ?,
+                size = ?,
+                price = ?,
+                stock = ?,
+                condition_type = ?,
+                image = ?,
+                supplier_id = ?
+                WHERE id = ?
+[2025-11-19 13:21:01] [update.php:252] ✅ Product updated successfully!

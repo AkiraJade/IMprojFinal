@@ -335,13 +335,14 @@ $categories_query = $conn->query("SELECT DISTINCT category FROM products WHERE s
     <?php if ($result->num_rows > 0): ?>
     <div class="grid">
         <?php while($row = $result->fetch_assoc()): ?>
-        <div class="product-card" onclick="location.href='product_details.php?id=<?= intval($row['id']); ?>'">
+        <div class="product-card" onclick="location.href='product_view.php?id=<?= intval($row['id']); ?>'">
             <?php if ($row['stock'] <= 5): ?>
                 <span class="product-badge">Only <?= $row['stock'] ?> Left!</span>
             <?php endif; ?>
             
-            <img src="uploads/<?= htmlspecialchars($row['image']); ?>" 
-                 alt="<?= htmlspecialchars($row['name']); ?>">
+            <img src="/IMprojFinal/public/uploads/<?= htmlspecialchars($row['image']); ?>" 
+                 alt="<?= htmlspecialchars($row['name']); ?>"
+                 onerror="this.onerror=null; this.src='/IMprojFinal/public/uploads/default.jpg'">
             
             <div class="product-card-content">
                 <h3><?= htmlspecialchars($row['name']); ?></h3>

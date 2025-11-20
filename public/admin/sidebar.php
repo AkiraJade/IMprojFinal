@@ -17,6 +17,16 @@ $base_path = ($current_dir === 'admin') ? '.' : '..';
         <li><a href="<?= $base_path ?>/expenses/read.php">💰 Expenses</a></li>
         <li><a href="<?= $base_path ?>/transactions/read.php">🧾 Sales</a></li>
         <li><a href="<?= $base_path ?>/reports/sales_report.php">📈 Reports</a></li>
+        <li>
+            <a href="<?= $base_path ?>/messages.php">
+                📧 Customer Messages
+                <?php 
+                $unread_count = $conn->query("SELECT COUNT(*) as count FROM contact_messages WHERE status = 'unread'")->fetch_assoc()['count'];
+                if ($unread_count > 0): ?>
+                    <span class="badge bg-danger"><?= $unread_count ?></span>
+                <?php endif; ?>
+            </a>
+        </li>
         <li><a href="../../logout.php">🚪 Logout</a></li>
     </ul>
 </aside>

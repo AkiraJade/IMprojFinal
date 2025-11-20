@@ -39,11 +39,9 @@
         </div>
 
     </div>
-
-    <div class="footer-bottom">
-        <p>&copy; <?= date("Y") ?> UrbanThrift — All Rights Reserved</p>
-    </div>
+    <p class="footer-bottom">&copy; <?= date("Y") ?> UrbanThrift — All Rights Reserved</p>
 </footer>
 
+<script src="/IMprojFinal/public/js/form-validation.js"></script>
 </body>
 </html>

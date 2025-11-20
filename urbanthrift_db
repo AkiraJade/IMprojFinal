@@ -235,3 +235,92 @@ WHERE role = 'admin';
 SELECT id, email, password, role FROM users WHERE email = 'admin@urbanthrift.com';
 ALTER TABLE users MODIFY password VARCHAR(255);
 
+-- Add supplier_id to products table
+ALTER TABLE products 
+ADD COLUMN supplier_id INT NULL,
+ADD CONSTRAINT fk_products_supplier
+FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL;
+
+-- Create supplier_products junction table
+CREATE TABLE supplier_products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    supplier_id INT NOT NULL,
+    product_id INT NOT NULL,
+    is_primary TINYINT(1) DEFAULT 1,
+    cost_price DECIMAL(10,2),
+    min_order_quantity INT DEFAULT 1,
+    lead_time_days INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_supplier_product (supplier_id, product_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS contact_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    phone VARCHAR(20),
+    subject VARCHAR(200) NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status ENUM('unread', 'read', 'replied') DEFAULT 'unread'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Update supplier_deliveries to reference supplier_products
+ALTER TABLE supplier_deliveries
+MODIFY COLUMN product_id INT NULL,
+ADD COLUMN supplier_product_id INT NULL AFTER id,
+ADD CONSTRAINT fk_delivery_supplier_product
+FOREIGN KEY (supplier_product_id) REFERENCES supplier_products(id) ON DELETE SET NULL;
+
+-- Add supplier_id column to products table
+ALTER TABLE products
+ADD COLUMN supplier_id INT NULL,
+ADD CONSTRAINT fk_products_supplier
+FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL;
+
+-- Create an index for better performance on supplier_products
+CREATE INDEX idx_supplier_products_product ON supplier_products(product_id);
+CREATE INDEX idx_supplier_products_supplier ON supplier_products(supplier_id);
+
+DESCRIBE urbanthrift_db.products;
+
+DESCRIBE cart;
+
+DESCRIBE supplier_deliveries;
+
+DESCRIBE customers;
+
+DESCRIBE urbanthrift_db.orders;
+
+SELECT o.*, 
+       (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as item_count
+FROM orders o
+WHERE o.customer_id = 1
+ORDER BY o.order_date DESC;
+
+SELECT 
+    o.id, 
+    o.status, 
+    o.total_amount,
+    oi.quantity,
+    p.name as product_name
+FROM orders o
+LEFT JOIN order_items oi ON o.id = oi.order_id
+LEFT JOIN products p ON oi.product_id = p.id
+WHERE o.customer_id = 1
+ORDER BY o.order_date DESC;
+
+SHOW TABLES LIKE 'customers';
+
+DESCRIBE users;
+
+SELECT * FROM orders;
+
+DESCRIBE urbanthrift_db.supplier_deliveries;
+
+SHOW CREATE TABLE product_reviews;
+
+SELECT * FROM product_reviews;

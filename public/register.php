@@ -585,76 +585,96 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </div>
                     <?php endif; ?>
 
-                    <form method="POST" id="registerForm" enctype="multipart/form-data">
+                    <form method="POST" id="registerForm" enctype="multipart/form-data" novalidate>
                         <div class="form-group">
-                            <label class="form-label">Full Name</label>
+                            <label class="form-label" for="username">Full Name</label>
                             <div class="input-wrapper">
                                 <input type="text" 
+                                       id="username"
                                        name="username" 
                                        class="form-input" 
-                                       placeholder="Enter your full name" 
-                                       required>
+                                       placeholder="Enter your full name"
+                                       data-required="true"
+                                       data-min-length="2"
+                                       data-max-length="100"
+                                       data-pattern="^[a-zA-Z\s]+" 
+                                       data-pattern-message="Please enter a valid name (letters and spaces only)">
                                 <span class="input-icon">👤</span>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Email Address</label>
+                            <label class="form-label" for="email">Email Address</label>
                             <div class="input-wrapper">
                                 <input type="email" 
+                                       id="email"
                                        name="email" 
                                        class="form-input" 
-                                       placeholder="your.email@example.com" 
-                                       required>
+                                       placeholder="your.email@example.com"
+                                       data-required="true"
+                                       data-pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
+                                       data-pattern-message="Please enter a valid email address">
                                 <span class="input-icon">📧</span>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Phone Number</label>
+                            <label class="form-label" for="phone">Phone Number</label>
                             <div class="input-wrapper">
                                 <input type="tel" 
+                                       id="phone"
                                        name="phone" 
                                        class="form-input" 
-                                       placeholder="+63 XXX XXX XXXX" 
-                                       required>
+                                       placeholder="+63 XXX XXX XXXX"
+                                       data-required="true"
+                                       data-pattern="^[+]?[0-9\s-]+"
+                                       data-pattern-message="Please enter a valid phone number">
                                 <span class="input-icon">📱</span>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Address</label>
+                            <label class="form-label" for="address">Address</label>
                             <div class="input-wrapper">
                                 <input type="text" 
+                                       id="address"
                                        name="address" 
                                        class="form-input" 
-                                       placeholder="Your complete address" 
-                                       required>
+                                       placeholder="Your complete address"
+                                       data-required="true"
+                                       data-min-length="10"
+                                       data-pattern-message="Please enter a valid address">
                                 <span class="input-icon">📍</span>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Profile Photo (Optional)</label>
+                            <label class="form-label" for="profile_photo">Profile Photo (Optional)</label>
                             <div class="input-wrapper">
                                 <input type="file" 
+                                       id="profile_photo"
                                        name="profile_photo" 
                                        class="form-input" 
                                        accept="image/*"
-                                       style="padding: 0.75rem;">
+                                       style="padding: 0.75rem;"
+                                       data-pattern="\.(jpg|jpeg|png|gif|webp)$"
+                                       data-pattern-message="Please upload a valid image file (JPG, PNG, GIF, or WebP)">
                                 <span class="input-icon">📷</span>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Password</label>
+                            <label class="form-label" for="password">Password</label>
                             <div class="input-wrapper">
                                 <input type="password" 
-                                       name="password" 
                                        id="password"
+                                       name="password" 
                                        class="form-input" 
-                                       placeholder="Create a strong password" 
-                                       required>
+                                       placeholder="Create a strong password"
+                                       data-required="true"
+                                       data-min-length="6"
+                                       data-pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$"
+                                       data-pattern-message="Password must contain at least one uppercase letter, one lowercase letter, and one number">
                                 <span class="input-icon">🔒</span>
                             </div>
                             <div class="password-strength" id="passwordStrength">
@@ -663,13 +683,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Confirm Password</label>
+                            <label class="form-label" for="confirm_password">Confirm Password</label>
                             <div class="input-wrapper">
                                 <input type="password" 
+                                       id="confirm_password"
                                        name="confirm_password" 
                                        class="form-input" 
-                                       placeholder="Re-enter your password" 
-                                       required>
+                                       placeholder="Re-enter your password"
+                                       data-required="true"
+                                       data-validate-confirm="password">
                                 <span class="input-icon">✓</span>
                             </div>
                         </div>
